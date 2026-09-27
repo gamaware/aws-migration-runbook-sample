@@ -29,3 +29,10 @@ build/
 # Tools
 .firecrawl/
 .DS_Store
+
+# Local agent state
+.claude-flow/
+.claude/proven-config*
+
+# Vale packages, downloaded by vale sync
+styles/
