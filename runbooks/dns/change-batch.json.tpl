@@ -4,7 +4,7 @@
     {
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "shop.example.com",
+        "Name": "warehouse.example.com",
         "Type": "A",
         "SetIdentifier": "onprem",
         "Weight": ${ONPREM_WEIGHT},
@@ -15,7 +15,7 @@
     {
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "shop.example.com",
+        "Name": "warehouse.example.com",
         "Type": "A",
         "SetIdentifier": "aws",
         "Weight": ${AWS_WEIGHT},

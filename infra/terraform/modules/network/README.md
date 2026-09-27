@@ -10,7 +10,7 @@ Tests: `tests/network.tftest.hcl`.
 
 | Name | Version |
 | ---- | ------- |
-| terraform | >= 1.9.0 |
+| terraform | >= 1.11.0, < 2.0.0 |
 | aws | >= 6.0, < 7.0 |
 
 ## Providers
@@ -70,7 +70,7 @@ Tests: `tests/network.tftest.hcl`.
 | ---- | ----------- |
 | app\_subnet\_ids | Application subnets, one per Availability Zone (ECS tasks and the DMS replication instance). |
 | data\_subnet\_ids | Data subnets without an internet route, one per Availability Zone (RDS). |
-| nat\_public\_ips | Egress addresses the payment provider must allowlist before cutover. |
+| nat\_public\_ips | Egress addresses the parcel carrier must allowlist before cutover. |
 | public\_subnet\_ids | Public subnets, one per Availability Zone (ALB and NAT gateways). |
 | vpc\_cidr | CIDR block of the target VPC. |
 | vpc\_id | ID of the target VPC. |

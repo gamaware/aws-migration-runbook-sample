@@ -60,7 +60,7 @@ Success! 6 passed, 0 failed.
 == infra/terraform/envs/production
 tests/production.tftest.hcl... in progress
   run "plan_files_drive_the_environment"... pass
-  run "customers_stay_on_premises_until_the_switch"... pass
+  run "users_stay_on_premises_until_the_switch"... pass
   run "dns_switch"... pass
   run "rejects_tagged_images"... pass
 tests/production.tftest.hcl... tearing down

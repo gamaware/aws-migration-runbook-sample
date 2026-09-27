@@ -12,9 +12,9 @@ override_data {
 override_resource {
   target = aws_acm_certificate.this
   values = {
-    arn = "arn:aws:acm:us-east-1:123456789012:certificate/11111111-2222-3333-4444-555555555555"
+    arn = "arn:aws:acm:us-east-1:111122223333:certificate/11111111-2222-3333-4444-555555555555"
     domain_validation_options = [
-      { domain_name = "shop.example.com", resource_record_name = "_a1.shop.example.com.", resource_record_type = "CNAME", resource_record_value = "_b1.acm-validations.aws." },
+      { domain_name = "warehouse.example.com", resource_record_name = "_a1.warehouse.example.com.", resource_record_type = "CNAME", resource_record_value = "_b1.acm-validations.aws." },
       { domain_name = "api.example.com", resource_record_name = "_a2.api.example.com.", resource_record_type = "CNAME", resource_record_value = "_b2.acm-validations.aws." },
     ]
   }
@@ -51,12 +51,12 @@ run "plan_files_drive_the_environment" {
   }
 }
 
-run "customers_stay_on_premises_until_the_switch" {
+run "users_stay_on_premises_until_the_switch" {
   command = apply
 
   assert {
     condition     = output.active_target == "onprem"
-    error_message = "A plain apply must never move customer traffic."
+    error_message = "A plain apply must never move user traffic."
   }
 }
 

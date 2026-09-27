@@ -1,5 +1,5 @@
 name,type,ttl,value,served_by
-shop.example.com,A,3600,203.0.113.10,SRV-01;SRV-02
+warehouse.example.com,A,3600,203.0.113.10,SRV-01;SRV-02
 api.example.com,A,3600,203.0.113.11,SRV-01;SRV-02
 sftp.example.com,A,3600,203.0.113.12,SRV-11
 wiki.corp.example.com,A,3600,10.40.5.81,SRV-12

@@ -9,7 +9,7 @@ one writer (ADR 0003). Tests: `tests/dns.tftest.hcl`.
 
 | Name | Version |
 | ---- | ------- |
-| terraform | >= 1.9.0 |
+| terraform | >= 1.11.0, < 2.0.0 |
 | aws | >= 6.0, < 7.0 |
 
 ## Providers

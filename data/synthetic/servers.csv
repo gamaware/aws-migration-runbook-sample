@@ -1,10 +1,10 @@
 server_id,hostname,app_id,role,software,os,vcpu,ram_gb,disk_gb,cpu_p95_pct,mem_p95_pct,private_ip
 SRV-01,hg-lb-01,APP-EDGE,load-balancer,HAProxy 2.4,RHEL 8.9,2,4,40,14,31,10.40.1.10
 SRV-02,hg-lb-02,APP-EDGE,load-balancer,HAProxy 2.4,RHEL 8.9,2,4,40,9,30,10.40.1.11
-SRV-03,hg-web-01,APP-STORE,web,nginx 1.24 + Node.js 20 storefront,RHEL 8.9,4,8,80,18,22,10.40.2.21
-SRV-04,hg-web-02,APP-STORE,web,nginx 1.24 + Node.js 20 storefront,RHEL 8.9,4,8,80,17,21,10.40.2.22
-SRV-05,hg-api-01,APP-ORDERS,api,Java 17 Spring Boot orders API,RHEL 8.9,8,16,100,20,30,10.40.3.31
-SRV-06,hg-api-02,APP-ORDERS,api,Java 17 Spring Boot orders API,RHEL 8.9,8,16,100,19,29,10.40.3.32
+SRV-03,hg-web-01,APP-WEB,web,nginx 1.24 + Node.js 20 warehouse web app,RHEL 8.9,4,8,80,18,22,10.40.2.21
+SRV-04,hg-web-02,APP-WEB,web,nginx 1.24 + Node.js 20 warehouse web app,RHEL 8.9,4,8,80,17,21,10.40.2.22
+SRV-05,hg-api-01,APP-API,api,Java 17 Spring Boot inventory API,RHEL 8.9,8,16,100,20,30,10.40.3.31
+SRV-06,hg-api-02,APP-API,api,Java 17 Spring Boot inventory API,RHEL 8.9,8,16,100,19,29,10.40.3.32
 SRV-07,hg-db-01,APP-DB,db-primary,PostgreSQL 14.11,RHEL 8.9,16,64,1000,38,80,10.40.4.41
 SRV-08,hg-db-02,APP-DB,db-replica,PostgreSQL 14.11 streaming replica,RHEL 8.9,16,64,1000,12,58,10.40.4.42
 SRV-09,hg-batch-01,APP-BATCH,batch,cron jobs (Python 3.9 and shell),RHEL 8.9,4,8,120,6,25,10.40.3.51

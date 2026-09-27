@@ -19,7 +19,7 @@ BEGIN
     SELECT table_schema, table_name
     FROM information_schema.tables
     WHERE table_type = 'BASE TABLE'
-      AND table_schema IN ('catalog', 'customers', 'orders', 'inventory', 'audit')
+      AND table_schema IN ('catalog', 'shipping', 'orders', 'inventory', 'audit')
       AND NOT (table_schema = 'audit' AND table_name = 'request_log')
   LOOP
     EXECUTE format('INSERT INTO v02_counts SELECT %L, count(*) FROM %I.%I',
@@ -28,7 +28,7 @@ BEGIN
 END $$;
 SELECT table_name, row_count FROM v02_counts ORDER BY table_name;
 
--- V-03: checksum of the last seven days of orders and order lines
+-- V-03: checksum of the last seven days of fulfillment orders and order lines
 SELECT 'orders.orders' AS table_name,
        count(*) AS row_count,
        md5(string_agg(o::text, '|' ORDER BY o.order_id)) AS checksum
@@ -60,7 +60,7 @@ JOIN pg_class AS c ON c.relname = s.sequencename
 JOIN pg_namespace AS n ON n.oid = c.relnamespace AND n.nspname = s.schemaname
 JOIN pg_depend AS d ON d.objid = c.oid AND d.deptype = 'a'
 JOIN pg_attribute AS a ON a.attrelid = d.refobjid AND a.attnum = d.refobjsubid
-WHERE s.schemaname IN ('catalog', 'customers', 'orders', 'inventory', 'audit')
+WHERE s.schemaname IN ('catalog', 'shipping', 'orders', 'inventory', 'audit')
   AND coalesce(s.last_value, 0) < (
     SELECT coalesce((xpath('/row/m/text()',
            query_to_xml(format('SELECT max(%I) AS m FROM %s', a.attname, d.refobjid::regclass), false, true, '')))[1]::text::bigint, 0)

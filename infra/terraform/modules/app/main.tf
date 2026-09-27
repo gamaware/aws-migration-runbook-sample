@@ -102,7 +102,7 @@ resource "aws_s3_bucket_policy" "alb_logs" {
 
 resource "aws_security_group" "alb" {
   name        = "${var.name}-alb"
-  description = "Internet-facing load balancer for the storefront and the orders API"
+  description = "Internet-facing load balancer for the warehouse web app and the inventory API"
   vpc_id      = var.vpc_id
 }
 
@@ -110,7 +110,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   for_each = toset(var.alb_ingress_cidrs)
 
   security_group_id = aws_security_group.alb.id
-  description       = "HTTPS from customers"
+  description       = "HTTPS from users"
   cidr_ipv4         = each.value
   from_port         = 443
   to_port           = 443
@@ -122,7 +122,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   for_each = toset(var.alb_ingress_cidrs)
 
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP from customers, redirected to HTTPS"
+  description       = "HTTP from users, redirected to HTTPS"
   cidr_ipv4         = each.value
   from_port         = 80
   to_port           = 80
@@ -246,7 +246,7 @@ resource "aws_vpc_security_group_ingress_rule" "services_from_alb" {
 
 resource "aws_vpc_security_group_egress_rule" "services_https" {
   security_group_id = aws_security_group.services.id
-  description       = "HTTPS to ECR, Secrets Manager, CloudWatch Logs and the payment provider"
+  description       = "HTTPS to ECR, Secrets Manager, CloudWatch Logs and the parcel carrier API"
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 443
   to_port           = 443

@@ -4,7 +4,7 @@
     {
       "Action": "DELETE",
       "ResourceRecordSet": {
-        "Name": "shop.example.com",
+        "Name": "warehouse.example.com",
         "Type": "A",
         "TTL": 60,
         "ResourceRecords": [{ "Value": "203.0.113.10" }]
@@ -13,7 +13,7 @@
     {
       "Action": "CREATE",
       "ResourceRecordSet": {
-        "Name": "shop.example.com",
+        "Name": "warehouse.example.com",
         "Type": "A",
         "SetIdentifier": "onprem",
         "Weight": 100,

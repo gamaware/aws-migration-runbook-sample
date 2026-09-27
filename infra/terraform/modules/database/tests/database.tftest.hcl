@@ -10,7 +10,7 @@ variables {
   instance_class            = "db.r7g.2xlarge"
   allocated_storage_gb      = 400
   max_allocated_storage_gb  = 1000
-  kms_key_arn               = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555"
+  kms_key_arn               = "arn:aws:kms:us-east-1:111122223333:key/11111111-2222-3333-4444-555555555555"
   client_security_group_ids = ["sg-0aaaaaaaaaaaaaaa1", "sg-0aaaaaaaaaaaaaaa2"]
   onprem_client_cidrs       = ["10.40.3.51/32", "10.40.5.61/32"]
 }

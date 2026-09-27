@@ -6,7 +6,7 @@ cutover_window: Sunday 00:30 to 04:30 US Central time, the lowest-traffic block 
 
 waves:
   - id: 1
-    name: Commerce core
+    name: Warehouse core
     components: [SRV-01, SRV-02, SRV-03, SRV-04, SRV-05, SRV-06, SRV-07, SRV-08]
     runbook: runbooks/wave-1-cutover.md
     repoints:

@@ -12,7 +12,7 @@
 | Schema | Tables | Size GB | Largest LOB KB | Changes MB/h | Excluded (no primary key) |
 | --- | --- | --- | --- | --- | --- |
 | catalog | 14 | 9.4 | 0 | 6 | none |
-| customers | 9 | 21.7 | 0 | 18 | none |
+| shipping | 9 | 21.7 | 0 | 18 | none |
 | orders | 18 | 96.3 | 38 | 310 | none |
 | inventory | 11 | 14.8 | 0 | 74 | none |
 | audit | 3 | 39.8 | 22 | 95 | audit.request_log |

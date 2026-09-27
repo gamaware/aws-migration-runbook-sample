@@ -6,17 +6,17 @@
 - Servers: 12 across 8 applications.
 - Capacity: 72 vCPU, 216 GB RAM, 3320 GB disk.
 - Database: PostgreSQL 14.11, 182.0 GB in 5 schemas, 55 tables.
-- Dependencies: 23 connections, 5 outside parties (EXT-CUSTOMERS, EXT-NAS, EXT-PAYMENTS, EXT-STAFF, EXT-SUPPLIERS).
+- Dependencies: 23 connections, 5 outside parties (EXT-CARRIER, EXT-NAS, EXT-STAFF, EXT-SUPPLIERS, EXT-USERS).
 - Scheduled jobs: 4; public or internal DNS names: 4.
 
 | Server | Host | App | Software | vCPU | RAM GB | CPU p95 | Mem p95 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | SRV-01 | hg-lb-01 | APP-EDGE | HAProxy 2.4 | 2 | 4 | 14% | 31% |
 | SRV-02 | hg-lb-02 | APP-EDGE | HAProxy 2.4 | 2 | 4 | 9% | 30% |
-| SRV-03 | hg-web-01 | APP-STORE | nginx 1.24 + Node.js 20 storefront | 4 | 8 | 18% | 22% |
-| SRV-04 | hg-web-02 | APP-STORE | nginx 1.24 + Node.js 20 storefront | 4 | 8 | 17% | 21% |
-| SRV-05 | hg-api-01 | APP-ORDERS | Java 17 Spring Boot orders API | 8 | 16 | 20% | 30% |
-| SRV-06 | hg-api-02 | APP-ORDERS | Java 17 Spring Boot orders API | 8 | 16 | 19% | 29% |
+| SRV-03 | hg-web-01 | APP-WEB | nginx 1.24 + Node.js 20 warehouse web app | 4 | 8 | 18% | 22% |
+| SRV-04 | hg-web-02 | APP-WEB | nginx 1.24 + Node.js 20 warehouse web app | 4 | 8 | 17% | 21% |
+| SRV-05 | hg-api-01 | APP-API | Java 17 Spring Boot inventory API | 8 | 16 | 20% | 30% |
+| SRV-06 | hg-api-02 | APP-API | Java 17 Spring Boot inventory API | 8 | 16 | 19% | 29% |
 | SRV-07 | hg-db-01 | APP-DB | PostgreSQL 14.11 | 16 | 64 | 38% | 80% |
 | SRV-08 | hg-db-02 | APP-DB | PostgreSQL 14.11 streaming replica | 16 | 64 | 12% | 58% |
 | SRV-09 | hg-batch-01 | APP-BATCH | cron jobs (Python 3.9 and shell) | 4 | 8 | 6% | 25% |

@@ -1,8 +1,8 @@
 # Module: app
 
-Application Load Balancer and two ECS Fargate services (the storefront and the orders API) that replace the HAProxy
-pair and four application servers. Port 80 redirects to HTTPS, tasks run in private subnets as a non-root user on a
-read-only file system, images must be pinned by digest, and deployments roll back on their own. Tests:
+Application Load Balancer and two ECS Fargate services (the warehouse web app and the inventory API) that replace the
+HAProxy pair and four application servers. Port 80 redirects to HTTPS, tasks run in private subnets as a non-root user
+on a read-only file system, images must be pinned by digest, and deployments roll back on their own. Tests:
 `tests/app.tftest.hcl`.
 
 <!-- BEGIN_TF_DOCS -->
@@ -10,7 +10,7 @@ read-only file system, images must be pinned by digest, and deployments roll bac
 
 | Name | Version |
 | ---- | ------- |
-| terraform | >= 1.9.0 |
+| terraform | >= 1.11.0, < 2.0.0 |
 | aws | >= 6.0, < 7.0 |
 
 ## Providers

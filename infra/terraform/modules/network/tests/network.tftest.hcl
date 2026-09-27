@@ -10,7 +10,7 @@ variables {
   onprem_cidr = "10.40.0.0/16"
   vpn_peer_ip = "203.0.113.20"
   vpn_bgp_asn = 65010
-  kms_key_arn = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555"
+  kms_key_arn = "arn:aws:kms:us-east-1:111122223333:key/11111111-2222-3333-4444-555555555555"
 }
 
 run "one_subnet_per_tier_per_az" {

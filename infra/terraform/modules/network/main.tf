@@ -61,7 +61,7 @@ resource "aws_subnet" "data" {
   tags = { Name = "${var.name}-data-${var.azs[count.index]}", Tier = "data" }
 }
 
-# One NAT gateway per Availability Zone. Their Elastic IPs are the new source addresses the payment provider must
+# One NAT gateway per Availability Zone. Their Elastic IPs are the new source addresses the parcel carrier must
 # allowlist before cutover (runbook prerequisite P-04).
 resource "aws_eip" "nat" {
   count = local.az_count

@@ -97,7 +97,7 @@ def test_missing_section_stops_the_other_rules(sandbox) -> None:
             "RUN-14",
             id="reverse-task-not-started",
         ),
-        pytest.param(RUNBOOK, "| P-04 | EXT-PAYMENTS: the", "| P-04 | The", "RUN-15", id="payment-allowlist-forgotten"),
+        pytest.param(RUNBOOK, "| P-04 | EXT-CARRIER: the", "| P-04 | The", "RUN-15", id="carrier-allowlist-forgotten"),
         pytest.param(
             "runbooks/acceptance-criteria.md",
             "| <= 30 min |",

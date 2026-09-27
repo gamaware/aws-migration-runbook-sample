@@ -24,7 +24,7 @@ output "data_subnet_ids" {
 }
 
 output "nat_public_ips" {
-  description = "Egress addresses the payment provider must allowlist before cutover."
+  description = "Egress addresses the parcel carrier must allowlist before cutover."
   value       = aws_eip.nat[*].public_ip
 }
 

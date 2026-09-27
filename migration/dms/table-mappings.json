@@ -10,8 +10,8 @@
     {
       "rule-type": "selection",
       "rule-id": "2",
-      "rule-name": "include-customers",
-      "object-locator": { "schema-name": "customers", "table-name": "%" },
+      "rule-name": "include-shipping",
+      "object-locator": { "schema-name": "shipping", "table-name": "%" },
       "rule-action": "include"
     },
     {

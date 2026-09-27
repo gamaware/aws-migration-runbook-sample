@@ -85,7 +85,7 @@ resource "aws_kms_alias" "this" {
 resource "aws_secretsmanager_secret" "app_db" {
   #checkov:skip=CKV2_AWS_57:Rotation needs the application to reload credentials; it is scheduled after hypercare (report RISK-08).
   name_prefix = "${local.name}/app-db-"
-  description = "Orders API database user on RDS"
+  description = "Inventory API database user on RDS"
   kms_key_id  = aws_kms_key.this.arn
 }
 

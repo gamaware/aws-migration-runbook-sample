@@ -1,10 +1,10 @@
 output "active_target" {
-  description = "Side that receives customer traffic: onprem before the DNS switch, aws after it."
+  description = "Side that receives user traffic: onprem before the DNS switch, aws after it."
   value       = module.dns.active_target
 }
 
 output "nat_public_ips" {
-  description = "Egress addresses to send to the payment provider for its allowlist (prerequisite P-04)."
+  description = "Egress addresses to send to the parcel carrier for its allowlist (prerequisite P-04)."
   value       = module.network.nat_public_ips
 }
 

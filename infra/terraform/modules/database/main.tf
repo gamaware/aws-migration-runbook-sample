@@ -34,7 +34,7 @@ resource "aws_vpc_security_group_ingress_rule" "from_onprem" {
 }
 
 # rds.logical_replication lets the reverse DMS task read changes from RDS, which is what makes a rollback after
-# the DNS switch possible without losing orders placed on AWS.
+# the DNS switch possible without losing orders written on AWS.
 resource "aws_db_parameter_group" "this" {
   name_prefix = "${var.name}-pg${var.engine_version}-"
   family      = "postgres${var.engine_version}"

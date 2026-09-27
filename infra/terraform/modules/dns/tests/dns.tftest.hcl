@@ -7,8 +7,8 @@ variables {
   alb_dns_name = "mock-1234567890.us-east-1.elb.amazonaws.com"
   alb_zone_id  = "Z35SXDOTRQ7X7K"
   records = {
-    "shop.example.com" = { onprem_ip = "203.0.113.10" }
-    "api.example.com"  = { onprem_ip = "203.0.113.11" }
+    "warehouse.example.com" = { onprem_ip = "203.0.113.10" }
+    "api.example.com"       = { onprem_ip = "203.0.113.11" }
   }
 }
 
@@ -22,7 +22,7 @@ run "before_cutover_all_traffic_stays_on_premises" {
 
   assert {
     condition     = output.active_target == "onprem"
-    error_message = "The default must keep customers on the data center."
+    error_message = "The default must keep users on the data center."
   }
 
   assert {

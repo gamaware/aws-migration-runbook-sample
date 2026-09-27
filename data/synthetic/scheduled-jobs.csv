@@ -1,5 +1,5 @@
 job_id,server_id,schedule,description,duration_minutes,writes_to
 JOB-01,SRV-09,0 2 * * *,supplier inventory sync from SFTP into inventory schema,25,inventory
-JOB-02,SRV-09,30 3 * * *,render invoice PDFs and mark orders invoiced,40,orders
+JOB-02,SRV-09,30 3 * * *,render packing lists and mark orders released for picking,40,orders
 JOB-03,SRV-07,0 1 * * *,pg_dump of harbor to the backup NAS,55,
 JOB-04,SRV-10,*/15 * * * *,refresh BI dashboard extracts,4,

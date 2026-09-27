@@ -1,6 +1,6 @@
 db_id,server_id,engine,version,database,schema,tables,size_gb,max_lob_kb,tables_without_pk,change_rate_mb_per_hour,peak_tps
 DB-01,SRV-07,postgresql,14.11,harbor,catalog,14,9.4,0,,6,40
-DB-01,SRV-07,postgresql,14.11,harbor,customers,9,21.7,0,,18,55
+DB-01,SRV-07,postgresql,14.11,harbor,shipping,9,21.7,0,,18,55
 DB-01,SRV-07,postgresql,14.11,harbor,orders,18,96.3,38,,310,210
 DB-01,SRV-07,postgresql,14.11,harbor,inventory,11,14.8,0,,74,35
 DB-01,SRV-07,postgresql,14.11,harbor,audit,3,39.8,22,audit.request_log,95,10

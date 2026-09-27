@@ -9,7 +9,7 @@ after the DNS switch. On-premises clients are limited to single hosts. Tests: `t
 
 | Name | Version |
 | ---- | ------- |
-| terraform | >= 1.9.0 |
+| terraform | >= 1.11.0, < 2.0.0 |
 | aws | >= 6.0, < 7.0 |
 
 ## Providers

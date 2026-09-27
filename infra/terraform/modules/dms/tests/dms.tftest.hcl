@@ -5,22 +5,22 @@ mock_provider "aws" {
 # Distinct ARNs per endpoint, so the wiring assertions below cannot pass by accident.
 override_resource {
   target = aws_dms_endpoint.onprem_source
-  values = { endpoint_arn = "arn:aws:dms:us-east-1:123456789012:endpoint:ONPREMSOURCE" }
+  values = { endpoint_arn = "arn:aws:dms:us-east-1:111122223333:endpoint:ONPREMSOURCE" }
 }
 
 override_resource {
   target = aws_dms_endpoint.rds_target
-  values = { endpoint_arn = "arn:aws:dms:us-east-1:123456789012:endpoint:RDSTARGET" }
+  values = { endpoint_arn = "arn:aws:dms:us-east-1:111122223333:endpoint:RDSTARGET" }
 }
 
 override_resource {
   target = aws_dms_endpoint.rds_source
-  values = { endpoint_arn = "arn:aws:dms:us-east-1:123456789012:endpoint:RDSSOURCE" }
+  values = { endpoint_arn = "arn:aws:dms:us-east-1:111122223333:endpoint:RDSSOURCE" }
 }
 
 override_resource {
   target = aws_dms_endpoint.onprem_target
-  values = { endpoint_arn = "arn:aws:dms:us-east-1:123456789012:endpoint:ONPREMTARGET" }
+  values = { endpoint_arn = "arn:aws:dms:us-east-1:111122223333:endpoint:ONPREMTARGET" }
 }
 
 variables {
@@ -29,7 +29,7 @@ variables {
   vpc_cidr    = "10.60.0.0/16"
   subnet_ids  = ["subnet-0bbbbbbbbbbbbbbb1", "subnet-0bbbbbbbbbbbbbbb2"]
   onprem_cidr = "10.40.0.0/16"
-  kms_key_arn = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555"
+  kms_key_arn = "arn:aws:kms:us-east-1:111122223333:key/11111111-2222-3333-4444-555555555555"
 
   onprem_database = { server_name = "10.40.4.41", port = 5432, database_name = "harbor" }
   rds_database    = { server_name = "mock.abcdefghijkl.us-east-1.rds.amazonaws.com", port = 5432, database_name = "harbor" }

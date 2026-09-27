@@ -37,7 +37,7 @@ manual_steps:
       replicate sequence values).
   - id: M-03
     step: Run ANALYZE on every migrated schema on RDS after the final change is applied, so the query planner has
-      statistics before customer traffic arrives.
+      statistics before user traffic arrives.
   - id: M-04
     step: Create the application roles on RDS from pg_dumpall --roles-only, with new passwords stored in Secrets
       Manager, and apply the grants from the schema dump (DMS does not copy roles or grants).

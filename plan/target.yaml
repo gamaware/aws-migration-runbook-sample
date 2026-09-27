@@ -12,7 +12,7 @@ hosted_zone: example.com
 
 # Records that move in wave 1. onprem_value must match data/synthetic/dns-records.csv.
 records:
-  - name: shop.example.com
+  - name: warehouse.example.com
     onprem_value: 203.0.113.10
     service: web
   - name: api.example.com

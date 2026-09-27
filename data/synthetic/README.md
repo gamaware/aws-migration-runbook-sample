@@ -1,8 +1,8 @@
 # Synthetic discovery data
 
-Fictional discovery export for **Harbor Goods**, a mid-size retailer that runs its online store in one on-premises
-data center. The files mimic what agent-based discovery and a DBA questionnaire return. No row describes a real
-system.
+Fictional discovery export for **Harbor Goods**, a fictional mid-size retailer. It covers the warehouse and inventory
+application, which still runs on virtual machines in a colocation data center. The files mimic what agent-based
+discovery and a DBA questionnaire return. No row describes a real system.
 
 | File | Content | Typical real source |
 | --- | --- | --- |

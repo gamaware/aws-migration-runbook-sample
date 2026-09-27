@@ -7,7 +7,7 @@ with `file()`, so the JSON here is exactly what gets deployed.
 | --- | --- | --- |
 | `table-mappings.json` | both tasks | Selects the five schemas and excludes `audit.request_log`, which has no primary key |
 | `task-settings-forward.json` | `harbor-wave1-full-load-cdc` | Full load, then change data capture from the data center to RDS, with row-level validation |
-| `task-settings-reverse.json` | `harbor-wave1-reverse-cdc` | Change data capture from RDS back to the data center, started at cutover so a rollback keeps new orders |
+| `task-settings-reverse.json` | `harbor-wave1-reverse-cdc` | Change data capture from RDS back to the data center, started at cutover so a rollback keeps new fulfillment orders |
 
 Choices worth knowing:
 

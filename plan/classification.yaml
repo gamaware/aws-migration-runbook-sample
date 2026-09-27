@@ -19,14 +19,14 @@ components:
     strategy: replatform
     target: ECS Fargate service "web" (infra/terraform/modules/app)
     rationale: >-
-      The storefront is a stateless Node.js process behind nginx and already reads its settings from environment
-      variables, so it runs in a container without code changes. Fargate removes OS patching.
+      The warehouse web app is a stateless Node.js process behind nginx and already reads its settings from
+      environment variables, so it runs in a container without code changes. Fargate removes OS patching.
     rejected: Rehost both VMs with AWS Application Migration Service, which carries over the configuration drift
       found between SRV-03 and SRV-04.
   - id: SRV-04
     strategy: replatform
     target: ECS Fargate service "web" (infra/terraform/modules/app)
-    rationale: Second storefront node; the ECS service runs two tasks across two Availability Zones instead.
+    rationale: Second web app node; the ECS service runs two tasks across two Availability Zones instead.
     rejected: Rehost with AWS Application Migration Service, as for SRV-03.
   - id: SRV-05
     strategy: replatform

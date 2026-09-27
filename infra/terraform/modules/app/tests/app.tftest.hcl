@@ -8,8 +8,8 @@ variables {
   vpc_cidr          = "10.60.0.0/16"
   public_subnet_ids = ["subnet-0aaaaaaaaaaaaaaa1", "subnet-0aaaaaaaaaaaaaaa2"]
   app_subnet_ids    = ["subnet-0bbbbbbbbbbbbbbb1", "subnet-0bbbbbbbbbbbbbbb2"]
-  certificate_arn   = "arn:aws:acm:us-east-1:123456789012:certificate/11111111-2222-3333-4444-555555555555"
-  kms_key_arn       = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555"
+  certificate_arn   = "arn:aws:acm:us-east-1:111122223333:certificate/11111111-2222-3333-4444-555555555555"
+  kms_key_arn       = "arn:aws:kms:us-east-1:111122223333:key/11111111-2222-3333-4444-555555555555"
 
   services = {
     web = {
@@ -19,7 +19,7 @@ variables {
       desired_count     = 2
       container_port    = 8080
       health_check_path = "/healthz"
-      host_name         = "shop.example.com"
+      host_name         = "warehouse.example.com"
     }
     api = {
       image             = "123456789012.dkr.ecr.us-east-1.amazonaws.com/harbor-api@sha256:2222222222222222222222222222222222222222222222222222222222222222"
@@ -29,7 +29,7 @@ variables {
       container_port    = 8080
       health_check_path = "/actuator/health"
       host_name         = "api.example.com"
-      secrets           = { DB_CREDENTIALS = "arn:aws:secretsmanager:us-east-1:123456789012:secret:harbor-app-AbCdEf" }
+      secrets           = { DB_CREDENTIALS = "arn:aws:secretsmanager:us-east-1:111122223333:secret:harbor-app-AbCdEf" }
     }
   }
 }
@@ -57,8 +57,8 @@ run "hosts_route_to_their_service" {
   }
 
   assert {
-    condition     = one(one(aws_lb_listener_rule.host["web"].condition).host_header).values == toset(["shop.example.com"])
-    error_message = "shop.example.com must route to the web target group."
+    condition     = one(one(aws_lb_listener_rule.host["web"].condition).host_header).values == toset(["warehouse.example.com"])
+    error_message = "warehouse.example.com must route to the web target group."
   }
 }
 
@@ -103,7 +103,7 @@ run "execution_role_reads_only_listed_secrets" {
   command = apply
 
   assert {
-    condition     = jsondecode(aws_iam_role_policy.execution_secrets[0].policy).Statement[0].Resource == ["arn:aws:secretsmanager:us-east-1:123456789012:secret:harbor-app-AbCdEf"]
+    condition     = jsondecode(aws_iam_role_policy.execution_secrets[0].policy).Statement[0].Resource == ["arn:aws:secretsmanager:us-east-1:111122223333:secret:harbor-app-AbCdEf"]
     error_message = "The execution role may read only the secrets the services reference."
   }
 }
@@ -120,7 +120,7 @@ run "rejects_image_tags" {
         desired_count     = 2
         container_port    = 8080
         health_check_path = "/healthz"
-        host_name         = "shop.example.com"
+        host_name         = "warehouse.example.com"
       }
     }
   }
@@ -140,7 +140,7 @@ run "rejects_single_task_services" {
         desired_count     = 1
         container_port    = 8080
         health_check_path = "/healthz"
-        host_name         = "shop.example.com"
+        host_name         = "warehouse.example.com"
       }
     }
   }
