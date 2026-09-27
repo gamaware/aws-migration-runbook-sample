@@ -1,0 +1,49 @@
+# Data migration plan for DB-01 (harbor on SRV-07). Terraform reads the task identifiers and files from here.
+
+source_database: DB-01
+target_engine_major: 16
+
+tasks:
+  forward:
+    id: harbor-wave1-full-load-cdc
+    migration_type: full-load-and-cdc
+    direction: on-premises to RDS
+    table_mappings: migration/dms/table-mappings.json
+    settings: migration/dms/task-settings-forward.json
+  reverse:
+    id: harbor-wave1-reverse-cdc
+    migration_type: cdc
+    direction: RDS to on-premises, started at cutover so a rollback keeps the writes made on AWS
+    table_mappings: migration/dms/table-mappings.json
+    settings: migration/dms/task-settings-reverse.json
+
+# Every schema in data/synthetic/databases.csv must be selected by the table mappings, and every table without a
+# primary key must be excluded here with a reason. scripts/check_plan.py enforces both.
+exclusions:
+  - table: audit.request_log
+    reason: >-
+      Request log without a primary key. A nightly retention job deletes rows older than 90 days; without a
+      primary key DMS cannot apply those deletes or validate the table. Its history is exported with pg_dump at
+      T-24h to a private Amazon S3 bucket encrypted with SSE-KMS, the rows written after that export are copied in
+      during the write freeze (M-05), and the application writes new rows on RDS after cutover.
+
+# Steps DMS does not cover for PostgreSQL. The runbook references each one by ID.
+manual_steps:
+  - id: M-01
+    step: Create the schema on RDS with pg_dump --schema-only before the full load (DMS creates tables but not
+      secondary indexes, defaults, views or functions).
+  - id: M-02
+    step: Reset every sequence on RDS to the source value after the final change is applied (DMS does not
+      replicate sequence values).
+  - id: M-03
+    step: Run ANALYZE on every migrated schema on RDS after the final change is applied, so the query planner has
+      statistics before customer traffic arrives.
+  - id: M-04
+    step: Create the application roles on RDS from pg_dumpall --roles-only, with new passwords stored in Secrets
+      Manager, and apply the grants from the schema dump (DMS does not copy roles or grants).
+  - id: M-05
+    step: During the write freeze, copy the audit.request_log rows written since the T-24h export into RDS with
+      psql \copy, so the excluded table loses no rows.
+
+# The RDS target endpoint runs "SET session_replication_role = replica" after it connects, so foreign keys and
+# triggers do not fire on the rows DMS applies. Application sessions are not affected.

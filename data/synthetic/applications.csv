@@ -1,0 +1,9 @@
+app_id,name,business_owner,criticality,rto_minutes,rpo_minutes,max_write_freeze_minutes
+APP-EDGE,Edge load balancing,Platform team,high,30,0,30
+APP-STORE,Online storefront,E-commerce team,high,30,0,30
+APP-ORDERS,Orders API,E-commerce team,high,30,0,30
+APP-DB,Commerce database,Platform team,high,30,0,30
+APP-BATCH,Nightly batch jobs,Operations team,medium,240,60,120
+APP-BI,Reporting dashboards,Finance team,low,1440,1440,480
+APP-SFTP,Supplier file exchange,Operations team,medium,240,60,120
+APP-WIKI,Intranet wiki,Platform team,low,10080,1440,1440

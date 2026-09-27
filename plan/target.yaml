@@ -1,0 +1,51 @@
+# Target sizing and addressing for wave 1. Terraform reads this file (infra/terraform/envs/production), so the
+# numbers the sizing check validates are the numbers that get deployed.
+
+region: us-east-1
+# Two Availability Zones, named explicitly so the subnet layout never changes when AWS adds a zone.
+availability_zones: [us-east-1a, us-east-1b]
+vpc_cidr: 10.60.0.0/16
+onprem_cidr: 10.40.0.0/16
+onprem_vpn_peer_ip: 203.0.113.20
+onprem_bgp_asn: 65010
+hosted_zone: example.com
+
+# Records that move in wave 1. onprem_value must match data/synthetic/dns-records.csv.
+records:
+  - name: shop.example.com
+    onprem_value: 203.0.113.10
+    service: web
+  - name: api.example.com
+    onprem_value: 203.0.113.11
+    service: api
+
+# Sizing rule (scripts/check_plan.py): per source server, task vCPU >= vCPU x p95 CPU x 1.25 and task memory >=
+# RAM x p95 memory x 1.25. Each ECS task replaces one server, so desired_count equals the number of sources.
+services:
+  web:
+    sources: [SRV-03, SRV-04]
+    cpu: 1024
+    memory: 3072
+    desired_count: 2
+    container_port: 8080
+    health_check_path: /healthz
+  api:
+    sources: [SRV-05, SRV-06]
+    cpu: 2048
+    memory: 6144
+    desired_count: 2
+    container_port: 8080
+    health_check_path: /actuator/health
+
+# Sizing rule: vCPU >= source vCPU x p95 CPU x 1.25; memory >= source RAM x p95 memory (the p95 is mostly page
+# cache, which the RDS instance rebuilds); allocated storage >= 2 x the source database size.
+database:
+  source: SRV-07
+  engine_version: "16"
+  instance_class: db.r7g.2xlarge
+  instance_vcpu: 8
+  instance_memory_gb: 64
+  allocated_storage_gb: 400
+  max_allocated_storage_gb: 1000
+  multi_az: true
+  backup_retention_days: 14
