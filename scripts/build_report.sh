@@ -15,11 +15,11 @@ mkdir -p "$WORK"
 (
   cd "$ROOT/report"
   pandoc REPORT.md --from gfm --to typst --standalone \
-    --template "$ROOT/report/template.typ" \
-    --metadata title="Harbor Goods: migration to AWS" \
+    --shift-heading-level-by=-1 --variable papersize=a4 \
     --output "$WORK/REPORT.typ"
 )
-cp -R "$ROOT/docs/diagrams" "$WORK/" 2> /dev/null || true
+# Typst resolves absolute image paths from --root, so point the report's ../docs/ images there.
+sed -i.bak 's#"\.\./docs/#"/docs/#g' "$WORK/REPORT.typ" && rm -f "$WORK/REPORT.typ.bak"
 
 uv run --quiet --no-project --with "typst==$TYPST_VERSION" python - "$WORK/REPORT.typ" "$OUT" "$ROOT" << 'PY'
 import sys
