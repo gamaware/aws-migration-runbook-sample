@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to this project are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). As an assessment sample, the project marks releases as
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). As a sample deliverable, the project marks releases as
 dated revisions rather than semantic versions of an interface.
 
 ## [Unreleased]
@@ -9,7 +9,8 @@ dated revisions rather than semantic versions of an interface.
 ### Added
 
 - Repository layout, pre-commit hooks, Makefile entry points and editor hooks.
-- Synthetic discovery inventory for the fictional Harbor Goods estate: 12 servers, 8 applications, 23 dependencies.
+- Synthetic discovery inventory for the fictional Harbor Goods warehouse and inventory application: 12 servers,
+  8 applications, 23 dependencies.
 - 7R classification with rationale and rejected options, a three-wave plan with repoints and computed hybrid links,
   target sizing and a data-migration plan.
 - Terraform for wave 1: network with Site-to-Site VPN, ALB and ECS Fargate, RDS for PostgreSQL 16 Multi-AZ, AWS DMS
@@ -20,4 +21,4 @@ dated revisions rather than semantic versions of an interface.
 - Plan, runbook and report checks (PLAN-01 to PLAN-10, RUN-01 to RUN-16, REPORT-01 to REPORT-04) with pytest cases
   that plant each mistake; generated evidence E-01 to E-08.
 - Report (Markdown and PDF), methodology, ADRs 0001 to 0004, system context and target diagrams, social preview.
-- CI calling the shared `gamaware/.github` workflows pinned to a commit SHA, plus OSSF Scorecard.
+- CI calling the shared `gamaware/.github` workflows pinned to a commit SHA, plus OpenSSF Scorecard.

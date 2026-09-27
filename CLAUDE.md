@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-Sample migration deliverable for **Harbor Goods, a fictional retailer**. Public portfolio repository.
+Sample migration deliverable for **Harbor Goods, a fictional mid-size retailer**: it moves the warehouse and inventory
+application from a colocation data center to AWS. The storefront already runs on AWS and is out of scope. Public
+portfolio repository.
 
 ## Rules
 
@@ -33,8 +35,8 @@ Sample migration deliverable for **Harbor Goods, a fictional retailer**. Public 
 - Python 3.13, PyYAML only, ruff 0.16.9 (pinned in the Makefile and pre-commit). Rules return `Result` objects
   and never swallow errors; CLIs exit 2 when a source file cannot be read.
 - Runbook tables are parsed: keep the column headers, the `X-NN` ID formats and one table per section.
-- Terraform: `>= 1.9`, AWS provider `>= 6.0, < 7.0`, tests with `mock_provider` and shared defaults in
-  `infra/terraform/tests/mocks`. Checkov skips sit inside the resource with a reason; a skip that defers work names a
-  `RISK-NN` row in the report.
+- Terraform: `>= 1.11.0, < 2.0.0` (CI uses 1.14.5), AWS provider `>= 6.0, < 7.0`, tests with `mock_provider` and
+  shared defaults in `infra/terraform/tests/mocks`. Checkov skips sit inside the resource with a reason; a skip that
+  defers work names a `RISK-NN` row in the report.
 - ADRs in `docs/adr/` use the FoSA2 format with a Compliance section.
 - Pre-commit hooks are pinned by commit SHA with a `# frozen:` comment.

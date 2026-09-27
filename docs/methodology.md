@@ -71,5 +71,6 @@ Output: [E-08](../evidence/E-08-terraform-tests.txt).
 
 ## Tool versions
 
-Terraform 1.14.5 with AWS provider 6.x, TFLint 0.61 with the AWS ruleset 0.49.0, Checkov 3.3.19, Python 3.13 with
-PyYAML 6.0.3, ruff 0.16.9, pandoc 3 and Typst 0.15 for the PDF.
+Terraform 1.14.5 with AWS provider 6.x, TFLint 0.61.0 with the AWS ruleset 0.49.0, Checkov 3.3.19, Python 3.13 with
+PyYAML 6.0.3, ruff 0.16.9, and the `pandoc/latex` 3.11 image (xelatex) for the PDF, the same image the shared
+`report.yml` workflow uses.

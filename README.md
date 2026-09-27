@@ -1,24 +1,29 @@
-# aws-migration-runbook-sample
+# AWS migration runbook sample
 
-A three-tier application moved from a data center to AWS, with a tested cutover and a rollback plan for every stage.
+A warehouse and inventory application moved from a colocation data center to AWS, with a tested cutover and a
+rollback plan for every stage.
 
-[![ci](https://github.com/gamaware/aws-migration-runbook-sample/actions/workflows/ci.yml/badge.svg)](https://github.com/gamaware/aws-migration-runbook-sample/actions/workflows/ci.yml)
+[![CI](https://github.com/gamaware/aws-migration-runbook-sample/actions/workflows/ci.yml/badge.svg)](https://github.com/gamaware/aws-migration-runbook-sample/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Fictional sample](https://img.shields.io/badge/data-fictional%20sample-7B1F6A.svg)
+![Fictional sample](https://img.shields.io/badge/fictional-sample-5b6b7f)
 
-![Migration to AWS: assess, plan, move, cut over](docs/assets/cover.png)
+![Migration to AWS](docs/assets/cover.png)
+
+> **Fictional sample.** Harbor Goods and all data here are fictional. Each repository in this portfolio is a
+> separate engagement with Harbor Goods, a fictional mid-size retailer. Account IDs are AWS documentation examples.
 
 ## Executive summary
 
-Harbor Goods, a fictional retailer, runs its online store on 12 servers: web, API and PostgreSQL. This repository is
-the migration deliverable: inventory, 7R classification, wave plan, target Terraform, AWS DMS tasks, cutover runbook
-and acceptance criteria. Scripts check that all of them agree.
+Harbor Goods' storefront already runs on AWS. Its warehouse and inventory application still runs on 12 virtual machines
+in a colocation data center: web app, inventory API and PostgreSQL 14. This repository is the migration deliverable:
+inventory, 7R classification, wave plan, target Terraform, AWS DMS tasks, cutover runbook and acceptance criteria.
+Scripts check that all of them agree.
 
-- **Outcome:** wave 1 moves the store in one four-hour window. Customers cannot place orders for at most 30 minutes,
-  and a rollback stays possible for seven days without losing an order.
+- **Outcome:** wave 1 moves the application in one four-hour window. Warehouse staff and the storefront's inventory
+  calls cannot write for at most 30 minutes, and a rollback stays possible for seven days without losing an order.
 - **Findings:** 9 risks from discovery, 3 of them high: BI reads the replica that wave 1 retires, a table without a
-  primary key, and a payment provider that allowlists the old egress address.
-- **Top recommendations:** register the new egress addresses with the payment provider now; approve the replatform to
+  primary key, and a parcel carrier that allowlists the old egress address.
+- **Top recommendations:** register the new egress addresses with the parcel carrier now; approve the replatform to
   ECS Fargate and RDS for PostgreSQL 16 moved with DMS full load plus CDC; hold the date only if the rehearsal
   finishes the freeze in 27 minutes or less.
 - **Techniques:** dependency-driven waves with computed hybrid links, AWS DMS with a reverse CDC task for lossless
@@ -40,22 +45,23 @@ and acceptance criteria. Scripts check that all of them agree.
 
 ## Scenario and acceptance criteria
 
-Harbor Goods sells online from one data center: an HAProxy pair, two storefront and two orders API servers, a
-PostgreSQL 14 primary with a replica (182 GB), a batch server, a BI server, a supplier SFTP server and an intranet
-wiki. Synthetic discovery data is in [`data/synthetic/`](data/synthetic/README.md).
+Harbor Goods runs its warehouse and inventory application in one colocation data center: an HAProxy pair, two web app
+and two inventory API servers, a PostgreSQL 14 primary with a replica (182 GB), a batch server, a BI server, a supplier
+SFTP server and an intranet wiki. Warehouse staff and handheld scanners use the web app; the storefront, already on
+AWS, calls the inventory API for stock levels and sends it fulfillment orders. Synthetic discovery data is in [`data/synthetic/`](data/synthetic/README.md).
 
 Constraints: a write freeze of at most 30 minutes, recovery within 30 minutes with no data loss, a Sunday night
-window, supplier contracts that pin the SFTP address, and a payment provider that allowlists the source IP.
+window, supplier contracts that pin the SFTP address, and a parcel carrier that allowlists the source IP.
 
 Wave 1 is accepted when all ten [acceptance criteria](runbooks/acceptance-criteria.md) hold through seven days of
-hypercare, among them 99.9 percent synthetic check success, orders API p95 at or below 350 ms, a write freeze within 30
-minutes and zero lost orders.
+hypercare, among them 99.9 percent synthetic check success, inventory API p95 at or below 350 ms, a write freeze within
+30 minutes and zero lost orders.
 
 ## Architecture
 
 ![Harbor Goods migration: system context](docs/diagrams/system-context.png)
 
-Customers reach the store through two public names. Today the data center serves them; after wave 1, ECS Fargate
+Users reach the application through two public names. Today the data center serves them; after wave 1, ECS Fargate
 behind an Application Load Balancer serves them, with RDS for PostgreSQL 16 Multi-AZ as the database. AWS DMS copies
 the data over a Site-to-Site VPN, first forward and then, after cutover, in reverse to keep the rollback path open.
 The deployment view with the cutover path is [`docs/diagrams/wave-1-target.png`](docs/diagrams/wave-1-target.png);
@@ -63,23 +69,23 @@ sources are the `.drawio` files next to it.
 
 ## Verify locally
 
-Prerequisites: Terraform 1.14.5 (1.9 or later works), TFLint 0.61 or later, uv 0.9 or later (brings Python 3.13,
-PyYAML, pytest, ruff and Checkov), GNU Make and diff. No AWS account or credentials.
+Prerequisites: Terraform 1.14.5 (1.11 or later works), TFLint 0.61.0, uv 0.12 or later (brings Python 3.13, PyYAML,
+pytest, ruff and Checkov 3.3.19), GNU Make and diff. CI uses the same versions. No AWS account or credentials.
 
 ```bash
 make verify
 ```
 
-Expected output ends with `make verify: all checks passed` after about a minute on a warm cache (the first run
-downloads the AWS provider and the TFLint ruleset). It runs ruff, 50 pytest cases, the plan rules (PLAN-01 to
-PLAN-10), the runbook rules (RUN-01 to RUN-16), `terraform fmt`, `validate` and 38 mocked `terraform test` runs across
-six roots, TFLint, Checkov, the evidence reproducibility check and the report checks.
+Expected output ends with `verify: all checks passed` after about a minute on a warm cache (the first run downloads
+the AWS provider and the TFLint ruleset). It runs ruff, the pytest suite, the plan rules (PLAN-01 to PLAN-10), the
+runbook rules (RUN-01 to RUN-16), `terraform fmt`, `validate` and the mocked `terraform test` runs in six roots,
+TFLint, Checkov, the evidence reproducibility check and the report checks.
 
 Optional targets:
 
 | Target | What it does | Needs |
 | --- | --- | --- |
-| `make report` | Renders `report/REPORT.pdf` from `report/REPORT.md` | pandoc |
+| `make report` | Renders `report/REPORT.pdf` from `report/REPORT.md` with the pandoc/latex image CI uses | Docker |
 | `make sql-check` | Runs the validation queries on PostgreSQL 14 and 16 and proves V-05 catches a stale sequence | Docker |
 | `make test-live` | Manual. Applies a network and database slice to the sandbox account, asserts, destroys, then checks nothing tagged is left | AWS `dev` profile |
 
@@ -107,9 +113,11 @@ docs/                  methodology, ADRs, diagrams, cover and social preview
 
 ## Decisions and trade-offs
 
-| ADR | Title | Status |
+Architecture decision records follow the *Fundamentals of Software Architecture* (2nd ed.) format.
+
+| Number | Title | Status |
 | --- | --- | --- |
-| [0001](docs/adr/0001-replatform-to-ecs-fargate-and-rds.md) | Replatform the commerce tier to ECS Fargate and Amazon RDS | Accepted |
+| [0001](docs/adr/0001-replatform-to-ecs-fargate-and-rds.md) | Replatform the warehouse application tier to ECS Fargate and Amazon RDS | Accepted |
 | [0002](docs/adr/0002-dms-full-load-cdc-with-reverse-replication.md) | Move the data with AWS DMS full load plus CDC, and keep a reverse task for rollback | Accepted |
 | [0003](docs/adr/0003-route53-weighted-records-as-a-single-writer-switch.md) | Use Route 53 weighted records as a switch, never as a traffic split | Accepted |
 | [0004](docs/adr/0004-plan-files-as-the-single-source-of-truth.md) | Keep the plan in data files that Terraform, the checks and the runbook share | Accepted |
@@ -137,10 +145,10 @@ docs/                  methodology, ADRs, diagrams, cover and social preview
 ## Related work
 
 Part of the [AWS DevOps portfolio](https://github.com/gamaware/aws-devops-portfolio); it backs the "Migration to AWS"
-service. The method is the one Alex Garcia uses in audits for ITESO and freelance clients in Guadalajara, and it draws on
-an earlier on-premises to AWS migration delivered with AWS DMS, Amazon RDS and Terraform. Contribution,
-conduct and support guidelines are inherited from [gamaware/.github](https://github.com/gamaware/.github); see also
-[SECURITY.md](SECURITY.md) and [CHANGELOG.md](CHANGELOG.md).
+service: [Migration to AWS on Upwork](https://www.upwork.com/freelancers/~014b3520cf9e140103). The method is the one
+Alex uses in audits for ITESO and freelance clients in Guadalajara. Contribution, conduct and support guidelines are
+inherited from [gamaware/.github](https://github.com/gamaware/.github); see also [SECURITY.md](SECURITY.md) and
+[CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
