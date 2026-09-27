@@ -1,0 +1,46 @@
+{
+  "rules": [
+    {
+      "rule-type": "selection",
+      "rule-id": "1",
+      "rule-name": "include-catalog",
+      "object-locator": { "schema-name": "catalog", "table-name": "%" },
+      "rule-action": "include"
+    },
+    {
+      "rule-type": "selection",
+      "rule-id": "2",
+      "rule-name": "include-customers",
+      "object-locator": { "schema-name": "customers", "table-name": "%" },
+      "rule-action": "include"
+    },
+    {
+      "rule-type": "selection",
+      "rule-id": "3",
+      "rule-name": "include-orders",
+      "object-locator": { "schema-name": "orders", "table-name": "%" },
+      "rule-action": "include"
+    },
+    {
+      "rule-type": "selection",
+      "rule-id": "4",
+      "rule-name": "include-inventory",
+      "object-locator": { "schema-name": "inventory", "table-name": "%" },
+      "rule-action": "include"
+    },
+    {
+      "rule-type": "selection",
+      "rule-id": "5",
+      "rule-name": "include-audit",
+      "object-locator": { "schema-name": "audit", "table-name": "%" },
+      "rule-action": "include"
+    },
+    {
+      "rule-type": "selection",
+      "rule-id": "6",
+      "rule-name": "exclude-audit-request-log",
+      "object-locator": { "schema-name": "audit", "table-name": "request_log" },
+      "rule-action": "exclude"
+    }
+  ]
+}
