@@ -69,7 +69,7 @@ tflint:
 
 ## checkov: IaC policy scan; each skip sits next to its resource with a reason
 checkov:
-	$(CHECKOV) --directory infra/terraform --framework terraform --quiet --compact --skip-path tests/live
+	$(CHECKOV) --config-file .checkov.yaml
 
 ## evidence: regenerate evidence/ (E-01 to E-08); review the diff before committing
 evidence: terraform
