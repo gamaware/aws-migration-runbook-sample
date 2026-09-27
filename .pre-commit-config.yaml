@@ -1,0 +1,91 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: 68e8b45440415753fff70a312ece8da92ba85b4a  # frozen: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: (uv\.lock|\.terraform\.lock\.hcl)$
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 6eaad039603a4de39fddd1cf5f727391efe9974e  # frozen: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: 916ad0aaa108c64d294101002066f530ea170b10  # frozen: v0.23.3
+    hooks:
+      - id: markdownlint-cli2
+        args: [--fix]
+
+  - repo: https://github.com/Mateusz-Grzelinski/actionlint-py
+    rev: 805f85e558841bf4d852335e036b33d2b26be1cc  # frozen: v1.7.12.25
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: fa412071e4f5d44d44f9e365f4676f9df92456a2  # frozen: v1.30.1
+    hooks:
+      - id: zizmor
+        args: [--offline, --config, zizmor.yml]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: a56c0b927e6465d37cae3e97d35d4d18ab2b96cd  # frozen: v0.16.9
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+        args: [--check]
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: 253d99053f80e4a368175e93b36edb662e7e5135  # frozen: v1.109.1
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+        args: [--hook-config=--retry-once-with-cleanup=true]
+      - id: terraform_tflint
+        args: [--args=--config=__GIT_WORKING_DIR__/.tflint.hcl]
+      - id: terraform_docs
+        files: ^infra/terraform/modules/
+        args: [--args=--config=.terraform-docs.yml]
+
+  - repo: https://github.com/bridgecrewio/checkov
+    rev: 8c0ddf99eabe4db75c739320274c7764866cd03d  # frozen: 3.3.19
+    hooks:
+      - id: checkov
+        args: [--quiet, --compact, --framework, terraform, --skip-path, tests/live]
+
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck --severity=warning
+        language: system
+        types: [shell]
+      - id: shellharden
+        name: shellharden
+        entry: shellharden --check
+        language: system
+        types: [shell]
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: 5f9c312d9978fbcee1da97154ba385834eeda799  # frozen: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
