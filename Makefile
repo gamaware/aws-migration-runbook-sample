@@ -26,7 +26,7 @@ export TF_PLUGIN_CACHE_DIR ?= $(HOME)/.terraform.d/plugin-cache
 
 ## verify: every offline check, in the order CI runs them
 verify: python-lint test plan-check runbook-check terraform tflint checkov evidence-check report-check
-	@echo "make verify: all checks passed"
+	@echo "verify: all checks passed"
 
 ## python-lint: ruff lint and format check on scripts/ and tests/
 python-lint:
@@ -85,7 +85,7 @@ evidence-check: terraform
 report-check:
 	$(PYTHON) scripts/check_report.py
 
-## report: render report/REPORT.pdf from report/REPORT.md (pandoc and Typst, no LaTeX)
+## report: render report/REPORT.pdf from report/REPORT.md with the pandoc/latex image CI uses (needs Docker)
 report:
 	scripts/build_report.sh
 

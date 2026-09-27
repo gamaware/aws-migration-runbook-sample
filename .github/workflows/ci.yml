@@ -55,7 +55,7 @@ jobs:
       contents: read
     uses: gamaware/.github/.github/workflows/lint-docs.yml@1255caafb08b06cc4658318c4dd48f9dea946c9e
     with:
-      run-vale: false
+      vale-paths: README.md CHANGELOG.md SECURITY.md docs report runbooks migration/dms/README.md data/synthetic/README.md
       lychee-args: >-
         --no-progress --max-retries 3 --accept 200..=299,403,429
         --exclude 'github\.com/gamaware/aws-migration-runbook-sample'
