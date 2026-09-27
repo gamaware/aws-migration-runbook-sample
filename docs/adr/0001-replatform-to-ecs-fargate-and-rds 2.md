@@ -1,4 +1,4 @@
-# 0001. Replatform the warehouse application tier to ECS Fargate and Amazon RDS
+# ADR 0001: Replatform the commerce tier to ECS Fargate and Amazon RDS
 
 ## Status
 
@@ -6,9 +6,9 @@ Accepted
 
 ## Context
 
-Wave 1 moves eight servers: an HAProxy pair, two warehouse web app servers, two inventory API servers, the
-PostgreSQL primary and its streaming replica. The platform team patches every one of them by hand, and discovery found
-configuration drift between the two web app servers. The web app and the API already read their settings from
+Wave 1 moves eight servers: an HAProxy pair, two storefront servers, two orders API servers, the PostgreSQL
+primary and its streaming replica. The platform team patches every one of them by hand, and discovery found
+configuration drift between the two storefront servers. The storefront and the API already read their settings from
 environment variables and hold no local state. The business accepts a write freeze of at most 30 minutes.
 
 Options considered:

@@ -1,4 +1,4 @@
-# 0004. Keep the plan in data files that Terraform, the checks and the runbook share
+# ADR 0004: Keep the plan in data files that Terraform, the checks and the runbook share
 
 ## Status
 
@@ -28,9 +28,3 @@ the report cites.
 `make verify` runs the checks, the Terraform tests and `evidence-check`, which rebuilds the evidence and fails on any
 difference from the committed copy. The production Terraform test asserts that the database admits exactly the hosts
 from the plan's hybrid links and that the DMS task identifiers match the plan.
-
-## Notes
-
-Alternatives considered: a spreadsheet as the plan of record, which Terraform and the checks cannot read, and
-Terraform variables as the only source, which the runbook checks and the evidence builder would have to parse out of
-HCL.

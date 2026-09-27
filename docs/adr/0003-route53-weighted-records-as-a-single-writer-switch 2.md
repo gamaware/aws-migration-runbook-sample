@@ -1,4 +1,4 @@
-# 0003. Use Route 53 weighted records as a switch, never as a traffic split
+# ADR 0003: Use Route 53 weighted records as a switch, never as a traffic split
 
 ## Status
 
@@ -6,9 +6,9 @@ Accepted
 
 ## Context
 
-Warehouse staff and the storefront reach `warehouse.example.com` and `api.example.com`, both served by the data center
-today with a one-hour TTL. The database has one writer. Sending some users to AWS and others to the data center at the
-same time would split writes across two databases.
+Customers reach `shop.example.com` and `api.example.com`, both served by the data center today with a one-hour TTL.
+The database has one writer. Sending some customers to AWS and others to the data center at the same time would
+split writes across two databases.
 
 ## Decision
 
@@ -21,7 +21,7 @@ TTL before the switch.
 ## Consequences
 
 - The switch (C-19) and the rollback change weights only; resolvers follow within about a minute.
-- No canary: the first user request on AWS is a real one. Smoke tests through `curl --resolve` (C-17) stand in
+- No canary: the first customer request on AWS is a real one. Smoke tests through `curl --resolve` (C-17) stand in
   for it.
 - Terraform updates the members one call at a time; the break-glass change batch flips all four in one call.
 
