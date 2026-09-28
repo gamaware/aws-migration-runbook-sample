@@ -1,5 +1,5 @@
 output "alb_dns_name" {
-  description = "DNS name of the load balancer; the Route 53 aws records alias to it."
+  description = "DNS name of the internal load balancer; the aws records in the private hosted zone alias to it."
   value       = aws_lb.this.dns_name
 }
 
@@ -26,4 +26,15 @@ output "cluster_name" {
 output "service_names" {
   description = "ECS service names keyed by service."
   value       = { for k, s in aws_ecs_service.this : k => s.name }
+}
+
+output "network_exposure" {
+  description = "What can reach the load balancer and where the tasks may connect; the tests assert none of it is the internet."
+  value = {
+    alb_internal      = aws_lb.this.internal
+    alb_subnet_ids    = sort(tolist(aws_lb.this.subnets))
+    ingress_cidrs     = sort(distinct(concat([for r in aws_vpc_security_group_ingress_rule.alb_https : r.cidr_ipv4], [for r in aws_vpc_security_group_ingress_rule.alb_http : r.cidr_ipv4])))
+    egress_cidrs      = sort(distinct([for r in concat([aws_vpc_security_group_egress_rule.services_https_vpc, aws_vpc_security_group_egress_rule.services_postgres], values(aws_vpc_security_group_egress_rule.services_https_carrier)) : r.cidr_ipv4]))
+    access_log_bucket = one(aws_lb.this.access_logs).bucket
+  }
 }

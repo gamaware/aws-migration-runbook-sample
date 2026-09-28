@@ -28,7 +28,7 @@ run "one_subnet_per_tier_per_az" {
 
   assert {
     condition     = alltrue([for s in concat(aws_subnet.public, aws_subnet.app, aws_subnet.data) : !s.map_public_ip_on_launch])
-    error_message = "No subnet may assign public IPs on launch; only the ALB and NAT gateways are internet-facing."
+    error_message = "No subnet may assign public IPs on launch; only the NAT gateways face the internet."
   }
 }
 
@@ -50,7 +50,8 @@ run "private_only_mode_has_no_internet_path" {
   command = apply
 
   variables {
-    internet_egress = false
+    internet_egress     = false
+    interface_endpoints = []
   }
 
   assert {
@@ -71,6 +72,53 @@ run "private_only_mode_has_no_internet_path" {
   assert {
     condition     = alltrue([for v in values(output.internet_exposure) : v == 0])
     error_message = "internet_exposure must report zero for every internet-facing resource type."
+  }
+
+  assert {
+    condition     = length(aws_vpc_endpoint.interface) == 0
+    error_message = "The private-only mode must be able to skip the interface endpoints."
+  }
+}
+
+run "aws_apis_through_vpc_endpoints" {
+  command = apply
+
+  assert {
+    condition     = aws_vpc_endpoint.s3.vpc_endpoint_type == "Gateway" && length(aws_vpc_endpoint.s3.route_table_ids) == 3
+    error_message = "The S3 gateway endpoint must serve both application route tables and the data route table."
+  }
+
+  assert {
+    condition     = toset(keys(aws_vpc_endpoint.interface)) == toset(["ecr.api", "ecr.dkr", "logs", "secretsmanager"]) && alltrue([for e in aws_vpc_endpoint.interface : e.private_dns_enabled])
+    error_message = "ECR, CloudWatch Logs and Secrets Manager need interface endpoints with private DNS."
+  }
+
+  assert {
+    condition     = aws_vpc_security_group_ingress_rule.endpoints_https.cidr_ipv4 == "10.60.0.0/16" && aws_vpc_security_group_ingress_rule.endpoints_https.from_port == 443
+    error_message = "The interface endpoints accept HTTPS from the VPC only."
+  }
+
+  assert {
+    condition     = length(aws_vpc_peering_connection.storefront) == 0 && output.storefront_peering_connection_id == null
+    error_message = "Without a storefront VPC the module creates no peering."
+  }
+}
+
+run "storefront_peering_routes_only_its_cidr" {
+  command = apply
+
+  variables {
+    storefront_vpc = { id = "vpc-0a1b2c3d4e5f67890", cidr = "10.50.0.0/16" }
+  }
+
+  assert {
+    condition     = aws_vpc_peering_connection.storefront[0].peer_vpc_id == "vpc-0a1b2c3d4e5f67890"
+    error_message = "The peering must connect to the storefront VPC."
+  }
+
+  assert {
+    condition     = length(aws_route.app_to_storefront) == 2 && alltrue([for r in aws_route.app_to_storefront : r.destination_cidr_block == "10.50.0.0/16"])
+    error_message = "Each application route table routes exactly the storefront CIDR through the peering."
   }
 }
 

@@ -68,3 +68,23 @@ variable "internet_egress" {
   type        = bool
   default     = true
 }
+
+variable "interface_endpoints" {
+  description = "AWS services that get an interface VPC endpoint in the application subnets (the service name suffix, such as ecr.api)."
+  type        = list(string)
+  default     = ["ecr.api", "ecr.dkr", "logs", "secretsmanager"]
+}
+
+variable "storefront_vpc" {
+  description = "Storefront VPC in the same account to peer with, so it reaches the internal load balancer. Null creates no peering."
+  type = object({
+    id   = string
+    cidr = string
+  })
+  default = null
+
+  validation {
+    condition     = var.storefront_vpc == null || can(cidrhost(var.storefront_vpc.cidr, 0))
+    error_message = "storefront_vpc.cidr must be a valid CIDR."
+  }
+}

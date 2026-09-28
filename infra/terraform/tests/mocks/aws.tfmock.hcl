@@ -14,18 +14,11 @@ mock_resource "aws_cloudwatch_log_group" {
   }
 }
 
-mock_resource "aws_s3_bucket" {
-  defaults = {
-    arn = "arn:aws:s3:::mock-bucket"
-    id  = "mock-bucket"
-  }
-}
-
 mock_resource "aws_lb" {
   defaults = {
     arn        = "arn:aws:elasticloadbalancing:us-east-1:111122223333:loadbalancer/app/mock/1234567890abcdef"
     arn_suffix = "app/mock/1234567890abcdef"
-    dns_name   = "mock-1234567890.us-east-1.elb.amazonaws.com"
+    dns_name   = "internal-mock-1234567890.us-east-1.elb.amazonaws.com"
     zone_id    = "Z35SXDOTRQ7X7K"
   }
 }
@@ -102,12 +95,6 @@ mock_resource "aws_dms_replication_task" {
 mock_resource "aws_acm_certificate" {
   defaults = {
     arn = "arn:aws:acm:us-east-1:111122223333:certificate/11111111-2222-3333-4444-555555555555"
-  }
-}
-
-mock_data "aws_elb_service_account" {
-  defaults = {
-    arn = "arn:aws:iam::111122223333:root"
   }
 }
 

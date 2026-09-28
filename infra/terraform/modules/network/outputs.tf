@@ -9,12 +9,12 @@ output "vpc_cidr" {
 }
 
 output "public_subnet_ids" {
-  description = "Public subnets, one per Availability Zone (ALB and NAT gateways)."
+  description = "Public subnets, one per Availability Zone (NAT gateways only; the load balancer is internal)."
   value       = aws_subnet.public[*].id
 }
 
 output "app_subnet_ids" {
-  description = "Application subnets, one per Availability Zone (ECS tasks and the DMS replication instance)."
+  description = "Application subnets, one per Availability Zone (internal load balancer, ECS tasks, interface endpoints and the DMS replication instance)."
   value       = aws_subnet.app[*].id
 }
 
@@ -42,4 +42,19 @@ output "internet_exposure" {
     default_routes      = length(aws_route.public_internet) + length(aws_route.app_internet)
     public_ip_subnets   = length([for s in concat(aws_subnet.public, aws_subnet.app, aws_subnet.data) : s if s.map_public_ip_on_launch])
   }
+}
+
+output "s3_prefix_list_id" {
+  description = "Prefix list of the S3 gateway endpoint, for security group egress to S3."
+  value       = aws_vpc_endpoint.s3.prefix_list_id
+}
+
+output "interface_endpoint_services" {
+  description = "Services reached through interface VPC endpoints instead of the internet."
+  value       = sort(keys(aws_vpc_endpoint.interface))
+}
+
+output "storefront_peering_connection_id" {
+  description = "VPC peering connection to the storefront VPC, or null when there is none."
+  value       = one(aws_vpc_peering_connection.storefront[*].id)
 }

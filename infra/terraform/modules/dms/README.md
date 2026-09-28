@@ -2,7 +2,8 @@
 
 AWS DMS replication instance, four endpoints and two tasks: a full load plus change data capture from the data
 center to RDS, and a change-data-capture-only task back to the data center for rollback. Credentials live in
-Secrets Manager and neither task starts on apply. Tests: `tests/dms.tftest.hcl`.
+Secrets Manager, reached through its interface endpoint (HTTPS egress stays inside the VPC CIDR), and neither task
+starts on apply. Tests: `tests/dms.tftest.hcl`.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -57,8 +58,8 @@ Secrets Manager and neither task starts on apply. Tests: `tests/dms.tftest.hcl`.
 | onprem\_database | Source database in the data center (SRV-07). | ```object({ server_name = string port = number database_name = string })``` | n/a | yes |
 | rds\_database | Target database on RDS. | ```object({ server_name = string port = number database_name = string })``` | n/a | yes |
 | reverse\_task | RDS to data center task, from plan/data-migration.yaml. It only runs after cutover. | ```object({ id = string migration_type = string table_mappings = string settings = string })``` | n/a | yes |
-| subnet\_ids | Application subnets: they route to the data center over the VPN and to Secrets Manager through NAT. | `list(string)` | n/a | yes |
-| vpc\_cidr | CIDR block of the VPC; the replication instance reaches RDS inside it. | `string` | n/a | yes |
+| subnet\_ids | Application subnets: they route to the data center over the VPN and reach Secrets Manager through its interface endpoint. | `list(string)` | n/a | yes |
+| vpc\_cidr | CIDR block of the VPC; the replication instance reaches RDS and the Secrets Manager endpoint inside it. | `string` | n/a | yes |
 | vpc\_id | VPC that hosts the replication instance. | `string` | n/a | yes |
 | allocated\_storage\_gb | Replication instance storage for cached changes and task logs. | `number` | `200` | no |
 | create\_service\_roles | Create dms-vpc-role and dms-cloudwatch-logs-role. Set false if the account already has them. | `bool` | `true` | no |

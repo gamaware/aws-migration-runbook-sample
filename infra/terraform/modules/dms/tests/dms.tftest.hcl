@@ -146,3 +146,17 @@ run "rejects_reverse_full_load" {
 
   expect_failures = [var.reverse_task]
 }
+
+run "https_stays_inside_the_vpc" {
+  command = apply
+
+  assert {
+    condition     = aws_vpc_security_group_egress_rule.to_aws_apis.cidr_ipv4 == var.vpc_cidr
+    error_message = "The replication instance reaches Secrets Manager through its interface endpoint, never the internet."
+  }
+
+  assert {
+    condition     = alltrue([for r in [aws_vpc_security_group_egress_rule.to_onprem_postgres, aws_vpc_security_group_egress_rule.to_rds_postgres, aws_vpc_security_group_egress_rule.to_aws_apis] : !contains(["0.0.0.0/0", "::/0"], coalesce(r.cidr_ipv4, r.cidr_ipv6, "none"))])
+    error_message = "No DMS egress rule may reach 0.0.0.0/0 or ::/0."
+  }
+}

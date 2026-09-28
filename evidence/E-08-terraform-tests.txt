@@ -3,15 +3,23 @@ tests/network.tftest.hcl... in progress
   run "one_subnet_per_tier_per_az"... pass
   run "data_tier_has_no_internet_route"... pass
   run "private_only_mode_has_no_internet_path"... pass
+  run "aws_apis_through_vpc_endpoints"... pass
+  run "storefront_peering_routes_only_its_cidr"... pass
   run "vpn_routes_only_the_data_center"... pass
   run "flow_logs_capture_all_traffic"... pass
   run "rejects_overlapping_cidrs"... pass
   run "rejects_single_az"... pass
 tests/network.tftest.hcl... tearing down
 tests/network.tftest.hcl... pass
-Success! 7 passed, 0 failed.
+Success! 9 passed, 0 failed.
 == infra/terraform/modules/app
 tests/app.tftest.hcl... in progress
+  run "load_balancer_is_internal"... pass
+  run "tasks_reach_aws_apis_privately"... pass
+  run "access_logs_go_to_the_log_archive"... pass
+  run "rejects_public_client_ranges"... pass
+  run "rejects_non_rfc1918_client_ranges"... pass
+  run "rejects_wide_carrier_ranges"... pass
   run "http_only_redirects_to_https"... pass
   run "hosts_route_to_their_service"... pass
   run "tasks_are_private_and_hardened"... pass
@@ -22,7 +30,7 @@ tests/app.tftest.hcl... in progress
   run "rejects_single_task_services"... pass
 tests/app.tftest.hcl... tearing down
 tests/app.tftest.hcl... pass
-Success! 8 passed, 0 failed.
+Success! 14 passed, 0 failed.
 == infra/terraform/modules/database
 tests/database.tftest.hcl... in progress
   run "database_is_private_encrypted_and_multi_az"... pass
@@ -44,11 +52,14 @@ tests/dms.tftest.hcl... in progress
   run "credentials_stay_out_of_terraform"... pass
   run "rejects_full_load_only"... pass
   run "rejects_reverse_full_load"... pass
+  run "https_stays_inside_the_vpc"... pass
 tests/dms.tftest.hcl... tearing down
 tests/dms.tftest.hcl... pass
-Success! 7 passed, 0 failed.
+Success! 8 passed, 0 failed.
 == infra/terraform/modules/dns
 tests/dns.tftest.hcl... in progress
+  run "records_live_in_a_private_zone"... pass
+  run "rejects_resolver_open_to_the_internet"... pass
   run "before_cutover_all_traffic_stays_on_premises"... pass
   run "cutover_moves_every_name_at_once"... pass
   run "rollback_restores_the_data_center"... pass
@@ -57,16 +68,17 @@ tests/dns.tftest.hcl... in progress
   run "rejects_the_old_ttl"... pass
 tests/dns.tftest.hcl... tearing down
 tests/dns.tftest.hcl... pass
-Success! 6 passed, 0 failed.
+Success! 8 passed, 0 failed.
 == infra/terraform/envs/production
 tests/production.tftest.hcl... in progress
   run "plan_files_drive_the_environment"... pass
+  run "nothing_faces_the_internet"... pass
   run "users_stay_on_premises_until_the_switch"... pass
   run "dns_switch"... pass
   run "rejects_tagged_images"... pass
 tests/production.tftest.hcl... tearing down
 tests/production.tftest.hcl... pass
-Success! 4 passed, 0 failed.
+Success! 5 passed, 0 failed.
 == infra/terraform/tests/live_private
 tests/private_only.tftest.hcl... in progress
   run "live_root_is_private_only"... pass

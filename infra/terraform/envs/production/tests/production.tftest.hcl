@@ -5,7 +5,7 @@ mock_provider "aws" {
 }
 
 override_data {
-  target = data.aws_route53_zone.this
+  target = data.aws_route53_zone.public
   values = { zone_id = "Z0123456789EXAMPLE", name = "example.com" }
 }
 
@@ -48,6 +48,40 @@ run "plan_files_drive_the_environment" {
   assert {
     condition     = length(module.network.app_subnet_ids) == 2
     error_message = "Wave 1 spans two Availability Zones."
+  }
+}
+
+run "nothing_faces_the_internet" {
+  command = apply
+
+  assert {
+    condition     = module.app.network_exposure.alb_internal && join(",", module.app.network_exposure.alb_subnet_ids) == join(",", sort(module.network.app_subnet_ids))
+    error_message = "The load balancer must be internal and sit in the private application subnets."
+  }
+
+  assert {
+    condition     = join(",", module.app.network_exposure.ingress_cidrs) == "10.40.0.0/16,10.50.0.0/16,10.60.0.0/16"
+    error_message = "Only the corporate network, the storefront VPC and the VPC itself may reach the load balancer."
+  }
+
+  assert {
+    condition     = length(setintersection(concat(module.app.network_exposure.egress_cidrs, module.app.network_exposure.ingress_cidrs), ["0.0.0.0/0", "::/0"])) == 0
+    error_message = "No task or load balancer rule may open ingress or egress to 0.0.0.0/0 or ::/0."
+  }
+
+  assert {
+    condition     = join(",", module.app.network_exposure.egress_cidrs) == "10.60.0.0/16,203.0.113.200/32,203.0.113.201/32"
+    error_message = "Task HTTPS egress is the VPC (endpoints, load balancer) plus the carrier's published addresses from plan/target.yaml."
+  }
+
+  assert {
+    condition     = module.app.network_exposure.access_log_bucket == "harbor-log-archive-444455556666-us-east-1"
+    error_message = "Access logs must go to the central log archive bucket named in plan/target.yaml."
+  }
+
+  assert {
+    condition     = output.storefront_peering_connection_id != null
+    error_message = "The storefront VPC must be peered, or it cannot reach the internal load balancer."
   }
 }
 

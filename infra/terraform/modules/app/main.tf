@@ -2,8 +2,6 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
-data "aws_elb_service_account" "this" {}
-
 locals {
   secret_arns = distinct(flatten([for s in values(var.services) : values(s.secrets)]))
   # Counted by secret names, which are known at plan time even when the ARNs are not.
@@ -13,96 +11,13 @@ locals {
   container_ports = toset([for s in values(var.services) : tostring(s.container_port)])
 }
 
-# --- Access logs for the load balancer -------------------------------------------------------------------------
-
-resource "aws_s3_bucket" "alb_logs" {
-  #checkov:skip=CKV_AWS_18:This bucket is the log destination; logging it to itself would loop.
-  #checkov:skip=CKV_AWS_144:Access logs are diagnostic data; cross-region replication is not worth its cost here.
-  #checkov:skip=CKV_AWS_145:ALB access logs support only SSE-S3 encryption, not SSE-KMS.
-  #checkov:skip=CKV2_AWS_62:No consumer needs event notifications for access log objects.
-  bucket_prefix = "${var.name}-alb-logs-"
-  force_destroy = false
-}
-
-resource "aws_s3_bucket_public_access_block" "alb_logs" {
-  bucket                  = aws_s3_bucket.alb_logs.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-resource "aws_s3_bucket_versioning" "alb_logs" {
-  bucket = aws_s3_bucket.alb_logs.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
-  bucket = aws_s3_bucket.alb_logs.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
-  bucket = aws_s3_bucket.alb_logs.id
-
-  rule {
-    id     = "expire-access-logs"
-    status = "Enabled"
-
-    filter {}
-
-    expiration {
-      days = 400
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 30
-    }
-
-    abort_incomplete_multipart_upload {
-      days_after_initiation = 7
-    }
-  }
-}
-
-resource "aws_s3_bucket_policy" "alb_logs" {
-  bucket = aws_s3_bucket.alb_logs.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "AllowElbLogDelivery"
-        Effect    = "Allow"
-        Principal = { AWS = data.aws_elb_service_account.this.arn }
-        Action    = "s3:PutObject"
-        Resource  = "${aws_s3_bucket.alb_logs.arn}/alb/*"
-      },
-      {
-        Sid       = "DenyInsecureTransport"
-        Effect    = "Deny"
-        Principal = "*"
-        Action    = "s3:*"
-        Resource  = [aws_s3_bucket.alb_logs.arn, "${aws_s3_bucket.alb_logs.arn}/*"]
-        Condition = { Bool = { "aws:SecureTransport" = "false" } }
-      },
-    ]
-  })
-}
-
 # --- Load balancer ---------------------------------------------------------------------------------------------
 
+# Internal: warehouse staff reach it from the corporate network over the Site-to-Site VPN, the storefront from its
+# peered VPC, and the web tasks from inside the VPC. Nothing on the internet can reach it.
 resource "aws_security_group" "alb" {
   name        = "${var.name}-alb"
-  description = "Internet-facing load balancer for the warehouse web app and the inventory API"
+  description = "Internal load balancer for the warehouse web app and the inventory API"
   vpc_id      = var.vpc_id
 }
 
@@ -110,7 +25,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   for_each = toset(var.alb_ingress_cidrs)
 
   security_group_id = aws_security_group.alb.id
-  description       = "HTTPS from users"
+  description       = "HTTPS from ${each.value}"
   cidr_ipv4         = each.value
   from_port         = 443
   to_port           = 443
@@ -122,7 +37,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   for_each = toset(var.alb_ingress_cidrs)
 
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP from users, redirected to HTTPS"
+  description       = "HTTP from ${each.value}, redirected to HTTPS"
   cidr_ipv4         = each.value
   from_port         = 80
   to_port           = 80
@@ -140,23 +55,22 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_services" {
   ip_protocol                  = "tcp"
 }
 
+# Access logs go to the central log archive bucket (var.access_logs), which carries the Elastic Load Balancing
+# log-delivery policy. ALB access logging supports only SSE-S3, so the workload does not own that bucket.
 resource "aws_lb" "this" {
-  #checkov:skip=CKV2_AWS_28:AWS WAF is a hypercare follow-up; its rules need tuning against real traffic first (report RISK-07).
   name                       = var.name
   load_balancer_type         = "application"
-  internal                   = false
+  internal                   = true
   security_groups            = [aws_security_group.alb.id]
-  subnets                    = var.public_subnet_ids
+  subnets                    = var.alb_subnet_ids
   drop_invalid_header_fields = true
   enable_deletion_protection = true
 
   access_logs {
-    bucket  = aws_s3_bucket.alb_logs.id
-    prefix  = "alb"
+    bucket  = var.access_logs.bucket
+    prefix  = var.access_logs.prefix
     enabled = true
   }
-
-  depends_on = [aws_s3_bucket_policy.alb_logs]
 }
 
 resource "aws_lb_target_group" "this" {
@@ -244,10 +158,33 @@ resource "aws_vpc_security_group_ingress_rule" "services_from_alb" {
   ip_protocol                  = "tcp"
 }
 
-resource "aws_vpc_security_group_egress_rule" "services_https" {
+# No rule reaches the whole internet. AWS APIs stay inside the VPC: the interface endpoints (ECR, CloudWatch Logs,
+# Secrets Manager) and the internal load balancer sit in the VPC CIDR, and image layers come from S3 through the
+# gateway endpoint. Only the parcel carrier's published addresses leave through the NAT gateways.
+resource "aws_vpc_security_group_egress_rule" "services_https_vpc" {
   security_group_id = aws_security_group.services.id
-  description       = "HTTPS to ECR, Secrets Manager, CloudWatch Logs and the parcel carrier API"
-  cidr_ipv4         = "0.0.0.0/0"
+  description       = "HTTPS to the interface endpoints and the internal load balancer"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "services_https_s3" {
+  security_group_id = aws_security_group.services.id
+  description       = "HTTPS to Amazon S3 through the gateway endpoint (ECR image layers)"
+  prefix_list_id    = var.s3_prefix_list_id
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "services_https_carrier" {
+  for_each = toset(var.carrier_api_cidrs)
+
+  security_group_id = aws_security_group.services.id
+  description       = "HTTPS to the parcel carrier label API at ${each.value}"
+  cidr_ipv4         = each.value
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"

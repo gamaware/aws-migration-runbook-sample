@@ -38,7 +38,10 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
-data "aws_route53_zone" "this" {
+# The public zone serves one purpose here: the ACM DNS validation records, which prove control of the names to the
+# certificate authority. They are CNAMEs to acm-validations.aws, not endpoints; the names users resolve live in the
+# private hosted zone of the dns module and never point at anything public.
+data "aws_route53_zone" "public" {
   name         = local.target.hosted_zone
   private_zone = false
 }
@@ -106,7 +109,7 @@ resource "aws_acm_certificate" "this" {
 resource "aws_route53_record" "certificate_validation" {
   for_each = toset(local.hostnames)
 
-  zone_id         = data.aws_route53_zone.this.zone_id
+  zone_id         = data.aws_route53_zone.public.zone_id
   name            = one([for o in aws_acm_certificate.this.domain_validation_options : o.resource_record_name if o.domain_name == each.key])
   type            = one([for o in aws_acm_certificate.this.domain_validation_options : o.resource_record_type if o.domain_name == each.key])
   records         = [one([for o in aws_acm_certificate.this.domain_validation_options : o.resource_record_value if o.domain_name == each.key])]
@@ -131,6 +134,8 @@ module "network" {
   vpn_peer_ip = local.target.onprem_vpn_peer_ip
   vpn_bgp_asn = local.target.onprem_bgp_asn
   kms_key_arn = aws_kms_key.this.arn
+
+  storefront_vpc = local.target.storefront_vpc
 }
 
 module "app" {
@@ -139,11 +144,17 @@ module "app" {
   name              = local.name
   vpc_id            = module.network.vpc_id
   vpc_cidr          = module.network.vpc_cidr
-  public_subnet_ids = module.network.public_subnet_ids
+  alb_subnet_ids    = module.network.app_subnet_ids
   app_subnet_ids    = module.network.app_subnet_ids
   certificate_arn   = aws_acm_certificate_validation.this.certificate_arn
   kms_key_arn       = aws_kms_key.this.arn
   services          = local.services
+  s3_prefix_list_id = module.network.s3_prefix_list_id
+  carrier_api_cidrs = local.target.carrier_api_cidrs
+  access_logs       = local.target.alb_access_logs
+
+  # Warehouse staff on the corporate network (over the VPN), the storefront VPC (peered) and the web tasks.
+  alb_ingress_cidrs = sort(distinct([local.target.onprem_cidr, local.target.storefront_vpc.cidr, module.network.vpc_cidr]))
 }
 
 module "database" {
@@ -194,7 +205,13 @@ module "dms" {
 module "dns" {
   source = "../../modules/dns"
 
-  zone_id         = data.aws_route53_zone.this.zone_id
+  name                  = local.name
+  zone_name             = local.target.hosted_zone
+  vpc_id                = module.network.vpc_id
+  associated_vpc_ids    = [local.target.storefront_vpc.id]
+  resolver_subnet_ids   = module.network.app_subnet_ids
+  resolver_client_cidrs = [local.target.onprem_cidr]
+
   records         = { for r in local.target.records : r.name => { onprem_ip = r.onprem_value } }
   alb_dns_name    = module.app.alb_dns_name
   alb_zone_id     = module.app.alb_zone_id

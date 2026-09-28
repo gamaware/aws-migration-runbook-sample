@@ -9,7 +9,7 @@ output "nat_public_ips" {
 }
 
 output "alb_dns_name" {
-  description = "Load balancer name, used by the smoke tests that run before the DNS switch."
+  description = "Internal load balancer name, used by the smoke tests that run from the corporate network before the DNS switch."
   value       = module.app.alb_dns_name
 }
 
@@ -41,4 +41,19 @@ output "dms_credential_secrets" {
 output "app_db_secret_arn" {
   description = "Secret the DBA fills with the orders API database user (manual step M-04)."
   value       = aws_secretsmanager_secret.app_db.arn
+}
+
+output "private_zone_id" {
+  description = "Private hosted zone of the wave 1 names, used by the break-glass DNS change batch (prerequisite P-03)."
+  value       = module.dns.zone_id
+}
+
+output "resolver_inbound_ips" {
+  description = "Resolver inbound endpoint addresses the corporate DNS servers forward the wave 1 names to (step C-02)."
+  value       = module.dns.resolver_inbound_ips
+}
+
+output "storefront_peering_connection_id" {
+  description = "Peering connection the storefront team routes this VPC's CIDR through (prerequisite P-02)."
+  value       = module.network.storefront_peering_connection_id
 }

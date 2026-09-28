@@ -130,10 +130,11 @@ resource "aws_vpc_security_group_egress_rule" "to_rds_postgres" {
   ip_protocol       = "tcp"
 }
 
+# Secrets Manager answers through its interface endpoint inside the VPC, so HTTPS never leaves the VPC CIDR.
 resource "aws_vpc_security_group_egress_rule" "to_aws_apis" {
   security_group_id = aws_security_group.dms.id
-  description       = "HTTPS to Secrets Manager and CloudWatch through NAT"
-  cidr_ipv4         = "0.0.0.0/0"
+  description       = "HTTPS to the Secrets Manager interface endpoint inside the VPC"
+  cidr_ipv4         = var.vpc_cidr
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"

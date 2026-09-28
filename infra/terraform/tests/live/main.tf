@@ -61,6 +61,9 @@ module "network" {
   kms_key_arn = aws_kms_key.live.arn
 
   internet_egress = false
+  # No ECS service or DMS instance runs in the live test, so it needs no interface endpoints; the free S3 gateway
+  # endpoint stays.
+  interface_endpoints = []
 }
 
 module "database" {

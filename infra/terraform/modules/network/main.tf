@@ -1,5 +1,7 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_region" "current" {}
+
 locals {
   az_count = length(var.azs)
 
@@ -224,6 +226,70 @@ resource "aws_vpn_gateway_route_propagation" "app" {
 resource "aws_vpn_gateway_route_propagation" "data" {
   vpn_gateway_id = aws_vpn_gateway.this.id
   route_table_id = aws_route_table.data.id
+}
+
+# --- VPC endpoints ---------------------------------------------------------------------------------------------
+
+# AWS API calls from the tasks and the DMS instance stay inside the VPC, so their security groups need no internet
+# egress. The S3 gateway endpoint is free and carries ECR image layers; its prefix list is what the task security
+# group allows for S3. The live test passes an empty interface list and keeps only the gateway endpoint.
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.this.id
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = concat(aws_route_table.app[*].id, [aws_route_table.data.id])
+
+  tags = { Name = "${var.name}-s3" }
+}
+
+resource "aws_security_group" "endpoints" {
+  name        = "${var.name}-endpoints"
+  description = "Interface VPC endpoints: HTTPS from inside the VPC only"
+  vpc_id      = aws_vpc.this.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "endpoints_https" {
+  security_group_id = aws_security_group.endpoints.id
+  description       = "HTTPS from the VPC"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_endpoint" "interface" {
+  for_each = toset(var.interface_endpoints)
+
+  vpc_id              = aws_vpc.this.id
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.${each.value}"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.app[*].id
+  security_group_ids  = [aws_security_group.endpoints.id]
+  private_dns_enabled = true
+
+  tags = { Name = "${var.name}-${each.value}" }
+}
+
+# --- Storefront VPC peering ------------------------------------------------------------------------------------
+
+# The storefront VPC (same account) calls the inventory API on the internal load balancer. The storefront team adds
+# the return route to this VPC's CIDR in their own route tables (runbook prerequisite P-02).
+resource "aws_vpc_peering_connection" "storefront" {
+  count = var.storefront_vpc == null ? 0 : 1
+
+  vpc_id      = aws_vpc.this.id
+  peer_vpc_id = var.storefront_vpc.id
+  auto_accept = true
+
+  tags = { Name = "${var.name}-storefront" }
+}
+
+resource "aws_route" "app_to_storefront" {
+  count = var.storefront_vpc == null ? 0 : local.az_count
+
+  route_table_id            = aws_route_table.app[count.index].id
+  destination_cidr_block    = var.storefront_vpc.cidr
+  vpc_peering_connection_id = aws_vpc_peering_connection.storefront[0].id
 }
 
 # VPC flow logs: the first place to look when a hybrid link or the DMS source endpoint stops connecting.

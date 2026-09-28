@@ -9,12 +9,12 @@ variable "vpc_id" {
 }
 
 variable "vpc_cidr" {
-  description = "CIDR block of the VPC; the replication instance reaches RDS inside it."
+  description = "CIDR block of the VPC; the replication instance reaches RDS and the Secrets Manager endpoint inside it."
   type        = string
 }
 
 variable "subnet_ids" {
-  description = "Application subnets: they route to the data center over the VPN and to Secrets Manager through NAT."
+  description = "Application subnets: they route to the data center over the VPN and reach Secrets Manager through its interface endpoint."
   type        = list(string)
 }
 
