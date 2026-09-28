@@ -1,0 +1,11 @@
+{
+  "color": "#7B1F6A",
+  "heading": ["Migration to AWS", "with a tested cutover"],
+  "subtitle": "7R plan · DMS full load + CDC · Route 53 switch",
+  "steps": [
+    {"label": "Assess and plan", "icon": "icons/discovery.svg"},
+    {"label": "Move in waves", "icon": "icons/migration.svg"},
+    {"label": "Cut over, roll back", "icon": "icons/route53.svg"}
+  ],
+  "illustration": "illustration.svg"
+}

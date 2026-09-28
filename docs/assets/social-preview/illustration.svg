@@ -1,0 +1,21 @@
+<rect x="24" y="70" width="210" height="330" rx="10" stroke-dasharray="8 8"/>
+  <text x="44" y="104" text-anchor="start" stroke="none" fill="#FFFFFF">source</text>
+  <rect x="56" y="130" width="146" height="44" rx="6"/><rect x="56" y="184" width="146" height="44" rx="6"/><rect x="56" y="238" width="146" height="44" rx="6"/>
+  <circle cx="76" cy="152" r="5"/><circle cx="76" cy="206" r="5"/><circle cx="76" cy="260" r="5"/>
+  <path d="M96,152 H182" stroke-opacity=".55"/><path d="M96,206 H182" stroke-opacity=".55"/><path d="M96,260 H182" stroke-opacity=".55"/>
+  <path d="M84,352 A26,26 0 0 1 132,338 A20,20 0 0 1 170,352 A16,16 0 0 1 166,378 H90 A16,16 0 0 1 84,352 Z"/>
+  <rect x="494" y="70" width="210" height="330" rx="10"/>
+  <text x="514" y="104" text-anchor="start" stroke="none" fill="#FFFFFF">aws</text>
+  <rect x="518" y="130" width="72" height="60" rx="6"/><rect x="610" y="130" width="72" height="60" rx="6"/><rect x="518" y="206" width="72" height="60" rx="6"/><rect x="610" y="206" width="72" height="60" rx="6" stroke="#FFC34D"/>
+  <rect x="518" y="282" width="72" height="60" rx="6"/><rect x="610" y="282" width="72" height="60" rx="6"/>
+  <path d="M234,160 C330,130 400,130 510,160" stroke="#FFC34D" stroke-width="3.5"/>
+  <path d="M510,160 l-13,-8 l-2,13 z" fill="#FFC34D" stroke="none"/>
+  <path d="M234,236 C330,206 400,206 510,236" stroke-dasharray="8 8"/>
+  <path d="M234,312 C330,282 400,282 510,312" stroke-dasharray="8 8"/>
+  <text x="364" y="118" text-anchor="middle" stroke="none" fill="#FFFFFF">waves</text>
+  <rect x="200" y="452" width="328" height="160" rx="8"/>
+  <text x="364" y="440" text-anchor="middle" stroke="none" fill="#FFFFFF">cutover</text>
+  <path d="M222,484 l7,7 l13,-14"/><path d="M254,490 H454" stroke-opacity=".55"/>
+  <path d="M222,520 l7,7 l13,-14"/><path d="M254,526 H424" stroke-opacity=".55"/>
+  <path d="M222,556 l7,7 l13,-14"/><path d="M254,562 H474" stroke-opacity=".55"/>
+  <circle cx="232" cy="592" r="9" fill="#FFC34D" stroke="none"/><path d="M254,592 H394" stroke-opacity=".55"/>

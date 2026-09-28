@@ -1,0 +1,28 @@
+language: en
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "data/synthetic/**"
+      instructions: >-
+        Synthetic discovery data for a fictional company. Flag any real-looking public IP (only 203.0.113.0/24 and
+        RFC 1918 ranges are allowed), real domain (only example.com), real account ID or personal name.
+    - path: "plan/**"
+      instructions: >-
+        The migration plan is the single source of truth for Terraform and the runbook. Check that every inventory
+        server has exactly one 7R strategy with a rationale, and that wave changes keep dependencies consistent.
+    - path: "runbooks/**"
+      instructions: >-
+        Cutover runbook. Every step needs an ID, a T-offset, an owner and a rollback reference. Go/no-go criteria
+        need numeric thresholds. Do not accept vague criteria such as "looks good".
+    - path: "infra/terraform/**"
+      instructions: >-
+        Offline-verifiable Terraform tested with mock providers. Check encryption, least privilege, no public
+        database, image digests instead of tags, and that tests assert outcomes rather than restate config.
+    - path: "scripts/**"
+      instructions: >-
+        Python 3.13 with PyYAML only. Checks must fail loudly with a clear message; no silent fallbacks.
+    - path: "**/*.md"
+      instructions: >-
+        Line length 120 (tables exempt). Neutral, specific voice; no marketing adjectives; dateless content.

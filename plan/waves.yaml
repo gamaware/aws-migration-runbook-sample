@@ -1,0 +1,57 @@
+# Wave plan. Every server that is not retained belongs to exactly one wave; retired servers are switched off at
+# the end of their wave. scripts/check_plan.py recomputes the hybrid links from data/synthetic/dependencies.csv
+# and fails if the list below does not match. Terraform opens the database to exactly these on-premises hosts.
+
+cutover_window: Sunday 00:30 to 04:30 US Central time, the lowest-traffic block in the discovery sample
+
+waves:
+  - id: 1
+    name: Warehouse core
+    components: [SRV-01, SRV-02, SRV-03, SRV-04, SRV-05, SRV-06, SRV-07, SRV-08]
+    runbook: runbooks/wave-1-cutover.md
+    repoints:
+      - consumer: SRV-10
+        from: SRV-08
+        to: SRV-07
+        reason: SRV-08 retires in this wave while BI stays on premises until wave 3. BI connects with a read-only role.
+    dns_removals: []
+    exit_criteria: >-
+      All acceptance criteria in runbooks/acceptance-criteria.md met, and seven days of hypercare without a
+      rollback trigger.
+  - id: 2
+    name: Batch and intranet
+    components: [SRV-09, SRV-12]
+    runbook: null
+    repoints: []
+    dns_removals: [wiki.corp.example.com]
+    exit_criteria: >-
+      Three consecutive nightly runs of JOB-01 and JOB-02 on EC2 with the same row counts as the on-premises
+      baseline; wiki export readable from Amazon S3.
+  - id: 3
+    name: Reporting
+    components: [SRV-10]
+    runbook: null
+    repoints: []
+    dns_removals: []
+    exit_criteria: The finance team signs off the 14 rebuilt dashboards against the old ones for one month-end close.
+
+retained: [SRV-11]
+
+# Links that cross the Site-to-Site VPN. from_wave is the first wave after which the link is hybrid;
+# until_wave is the wave that ends it, or null while one side stays in the data center.
+hybrid_links:
+  - consumer: SRV-09
+    provider: SRV-07
+    port: 5432
+    from_wave: 1
+    until_wave: 2
+  - consumer: SRV-10
+    provider: SRV-07
+    port: 5432
+    from_wave: 1
+    until_wave: 3
+  - consumer: SRV-09
+    provider: SRV-11
+    port: 22
+    from_wave: 2
+    until_wave: null

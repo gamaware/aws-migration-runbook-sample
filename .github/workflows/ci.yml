@@ -1,0 +1,99 @@
+name: ci
+
+# Offline checks only: no job gets AWS credentials, an id-token or a secret. The verify job runs the same
+# `make verify` a reviewer runs locally; the other jobs call the portfolio's shared workflows, pinned by SHA.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: make verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read # checkout
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.14.5"
+          terraform_wrapper: false
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@1cf010d3c7aef302051ccdb68c14c5dc2efa34ef # v6.3.1
+        with:
+          tflint_version: v0.61.0
+
+      - name: Install the TFLint AWS ruleset
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # avoids GitHub API rate limits on the ruleset download
+        run: tflint --init --config "$GITHUB_WORKSPACE/.tflint.hcl"
+
+      - name: make verify
+        run: make verify
+
+  lint-docs:
+    permissions:
+      contents: read
+    uses: gamaware/.github/.github/workflows/lint-docs.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    with:
+      vale-paths: README.md CHANGELOG.md SECURITY.md docs report runbooks migration/dms/README.md data/synthetic/README.md
+      lychee-args: >-
+        --no-progress --max-retries 3 --accept 200..=299,403,429
+        --exclude 'github\.com/gamaware/aws-migration-runbook-sample'
+        --exclude 'github\.com/gamaware/aws-devops-portfolio'
+        --exclude-path node_modules './**/*.md'
+
+  lint-actions:
+    permissions:
+      contents: read
+    uses: gamaware/.github/.github/workflows/lint-actions.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+
+  secrets:
+    permissions:
+      contents: read
+    uses: gamaware/.github/.github/workflows/secrets.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+
+  security:
+    permissions:
+      contents: read
+    uses: gamaware/.github/.github/workflows/security.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    with:
+      trivy-skip-dirs: infra/terraform/tests/live
+      checkov-config: .checkov.yaml
+
+  terraform:
+    permissions:
+      contents: read
+    uses: gamaware/.github/.github/workflows/terraform.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    with:
+      terraform-version: "1.14.5"
+      working-directories: >-
+        ["infra/terraform/modules/network", "infra/terraform/modules/app", "infra/terraform/modules/database",
+        "infra/terraform/modules/dms", "infra/terraform/modules/dns", "infra/terraform/envs/production"]
+
+  report:
+    permissions:
+      contents: read
+    uses: gamaware/.github/.github/workflows/report.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    with:
+      pandoc-args: --pdf-engine=xelatex -V geometry:margin=2cm --shift-heading-level-by=-1
+      evidence-command: python -m pip install --quiet pyyaml==6.0.3 && python scripts/build_evidence.py
