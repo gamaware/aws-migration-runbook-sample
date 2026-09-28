@@ -4,10 +4,12 @@
 #   make test-live            # asks for confirmation after showing the account
 #   CONFIRM=yes make test-live
 #
-# What it does: shows the caller identity of the `dev` profile, runs `terraform test` in
-# infra/terraform/tests/live (apply, assert, destroy), then checks that no resource tagged
-# purpose=portfolio-test from this run is left and prints any leftover for manual deletion. Logs go to build/live/, which git ignores; never commit them.
-# Expected cost: under USD 1 for a run of about 25 minutes (VPN connection, NAT gateways, db.t4g.medium).
+# What it does: shows the caller identity of the `dev` profile, plans infra/terraform/tests/live and refuses to go on
+# if scripts/check_private_plan.py finds anything internet-facing in that plan (private-only, ADR 0005), runs
+# `terraform test` there (apply, assert, destroy), then checks that no resource tagged purpose=portfolio-test from
+# this run is left and prints any leftover for manual deletion. Logs and the plan go to build/live/, which git
+# ignores; never commit them.
+# Expected cost: under USD 1 for a run of about 25 minutes (VPN connection, db.t4g.medium; no NAT gateway).
 set -euo pipefail
 
 PROFILE="${AWS_LIVE_PROFILE:-dev}"
@@ -71,6 +73,20 @@ on_exit() {
 }
 trap on_exit EXIT
 
+LIVE_VARS=(-var "aws_profile=$PROFILE" -var "region=$REGION" -var "run_id=$RUN_ID")
+PLAN_FILE="$LOG_DIR/plan-$RUN_ID.bin"
+PLAN_JSON="$LOG_DIR/plan-$RUN_ID.json"
+
 terraform -chdir="$LIVE_DIR" init -backend=false -input=false >"$LOG_DIR/init-$RUN_ID.log"
-terraform -chdir="$LIVE_DIR" test -no-color \
-  -var "aws_profile=$PROFILE" -var "region=$REGION" -var "run_id=$RUN_ID" | tee "$LOG_DIR/test-$RUN_ID.log"
+
+# Pre-flight: plan with the exact variables terraform test uses and refuse the run, before anything exists, if the
+# plan contains an internet-facing resource. A plan creates nothing.
+terraform -chdir="$LIVE_DIR" plan -input=false -no-color -out="$PLAN_FILE" "${LIVE_VARS[@]}" \
+  >"$LOG_DIR/plan-$RUN_ID.log"
+terraform -chdir="$LIVE_DIR" show -json "$PLAN_FILE" >"$PLAN_JSON"
+if ! python3 "$ROOT/scripts/check_private_plan.py" "$PLAN_JSON"; then
+  echo "Live test refused: the plan is not private-only. Nothing was created." >&2
+  exit 1
+fi
+
+terraform -chdir="$LIVE_DIR" test -no-color "${LIVE_VARS[@]}" | tee "$LOG_DIR/test-$RUN_ID.log"
