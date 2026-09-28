@@ -15,9 +15,10 @@
 ## Executive summary
 
 Harbor Goods' storefront already runs on AWS; its warehouse and inventory application still runs in a colocation
-data center. A four-hour Sunday window allows Harbor Goods to move that application to AWS, with writes paused for
-warehouse staff and for the storefront's inventory calls for no more than 30 minutes. During the seven days that
-follow, the application can move back to the data center at any time without losing fulfillment orders.
+data center. The plan moves that application to AWS in a four-hour Sunday window. Its acceptance targets are a write
+pause of no more than 30 minutes for warehouse staff and for the storefront's inventory calls, and, during the seven
+days that follow, a rollback to the data center at any time with zero lost fulfillment orders. These are targets for
+the rehearsal and the cutover to meet, not measured results.
 
 The nine risks identified during discovery divide equally into high, medium and low severity; the complete register
 appears under "Risks." Each of the three high-severity issues would block or break cutover if missed.
@@ -166,4 +167,5 @@ fulfillment orders and completion of a point-in-time restore within 60 minutes.
 
 ---
 
-Fictional sample prepared for a portfolio. Harbor Goods does not exist.
+Fictional sample prepared for a portfolio. Each repository in this portfolio is a separate engagement with Harbor
+Goods, a fictional mid-size retailer. Harbor Goods does not exist.

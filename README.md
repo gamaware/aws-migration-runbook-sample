@@ -1,7 +1,7 @@
 # AWS migration runbook sample
 
-A warehouse and inventory application moved from a colocation data center to AWS, with a tested cutover and a
-rollback plan for every stage.
+A proposed migration of a warehouse and inventory application to AWS, with an offline-checked cutover runbook and
+rollback procedures.
 
 [![CI](https://github.com/gamaware/aws-migration-runbook-sample/actions/workflows/ci.yml/badge.svg)](https://github.com/gamaware/aws-migration-runbook-sample/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -19,8 +19,9 @@ in a colocation data center: web app, inventory API and PostgreSQL 14. This repo
 inventory, 7R classification, wave plan, target Terraform, AWS DMS tasks, cutover runbook and acceptance criteria.
 Scripts check that all of them agree.
 
-- **Outcome:** wave 1 moves the application in one four-hour window. Warehouse staff and the storefront's inventory
-  calls cannot write for at most 30 minutes, and a rollback stays possible for seven days without losing an order.
+- **Planned outcome (acceptance targets, not measured results):** wave 1 moves the application in one four-hour
+  window; warehouse staff and the storefront's inventory calls cannot write for at most 30 minutes; a rollback stays
+  possible for seven days with zero lost orders.
 - **Findings:** 9 risks from discovery, 3 of them high: BI reads the replica that wave 1 retires, a table without a
   primary key, and a parcel carrier that allowlists the old egress address.
 - **Top recommendations:** register the new egress addresses with the parcel carrier now; approve the replatform to
