@@ -36,8 +36,24 @@ FORBIDDEN_TYPES = {
 
 PUBLIC_ACLS = {"public-read", "public-read-write", "authenticated-read"}
 
-# Resource policies that could grant access to anyone: an Allow to "*" without a Condition is refused.
+# Resource policies that could grant access to anyone: an Allow to "*" is refused unless a Condition limits the
+# caller to an account, organization, principal, source resource or VPC.
 POLICY_TYPES = {"aws_s3_bucket_policy", "aws_ecr_repository_policy", "aws_ecrpublic_repository_policy"}
+
+# Condition keys that tie a statement to known callers. aws:SecureTransport, aws:SourceIp and similar keys do not:
+# anyone on the internet can meet them.
+RESTRICTING_CONDITION_KEYS = {
+    "aws:principalaccount",
+    "aws:principalarn",
+    "aws:principalorgid",
+    "aws:principalorgpaths",
+    "aws:sourceaccount",
+    "aws:sourcearn",
+    "aws:sourceorgid",
+    "aws:sourceorgpaths",
+    "aws:sourcevpc",
+    "aws:sourcevpce",
+}
 
 PUBLICLY_ACCESSIBLE_TYPES = {
     "aws_db_instance",
@@ -73,7 +89,7 @@ def _default_route_via_gateway(route: dict[str, Any], unknown: dict[str, Any]) -
 
 
 def _allows_anyone(policy: Any) -> bool:
-    """True when a policy document has an Allow statement for any principal ("*") and no Condition."""
+    """True when a policy document has an Allow statement for any principal ("*") that no Condition key limits."""
     if not isinstance(policy, str) or not policy:
         return False
     try:
@@ -86,9 +102,54 @@ def _allows_anyone(policy: Any) -> bool:
     for statement in statements:
         principal = statement.get("Principal")
         anyone = principal == "*" or (isinstance(principal, dict) and "*" in _as_list(principal.get("AWS")))
-        if statement.get("Effect") == "Allow" and anyone and not statement.get("Condition"):
+        if statement.get("Effect") == "Allow" and anyone and not _limits_callers(statement.get("Condition")):
             return True
     return False
+
+
+def _limits_callers(condition: Any) -> bool:
+    """True when a Condition ties the statement to concrete, known callers.
+
+    Negated, Null and IfExists operators let callers without the key through. A wildcard value ("*" or "?") matches
+    anyone, and "anonymous" is the value aws:PrincipalAccount takes for unsigned requests. ForAllValues is true when
+    the key is absent, so it counts only alongside a Null check that requires the key.
+    """
+    if not isinstance(condition, dict):
+        return False
+    required = _required_keys(condition)
+    for operator, block in condition.items():
+        if not isinstance(operator, str) or not isinstance(block, dict):
+            continue
+        if "Not" in operator or operator == "Null" or operator.endswith("IfExists"):
+            continue
+        for key, value in block.items():
+            name = key.lower() if isinstance(key, str) else ""
+            if name not in RESTRICTING_CONDITION_KEYS or not _concrete(value):
+                continue
+            if operator.startswith("ForAllValues:") and name not in required:
+                continue
+            return True
+    return False
+
+
+def _required_keys(condition: dict[str, Any]) -> set[str]:
+    """Condition keys a Null operator requires to be present ("false" means the key must exist)."""
+    block = condition.get("Null")
+    if not isinstance(block, dict):
+        return set()
+    return {key.lower() for key, value in block.items() if isinstance(key, str) and _is_false(value)}
+
+
+def _is_false(value: Any) -> bool:
+    return all(v is False or (isinstance(v, str) and v.lower() == "false") for v in _as_list(value))
+
+
+def _concrete(value: Any) -> bool:
+    """A non-empty list of literal values, none a wildcard pattern and none "anonymous"."""
+    values = _as_list(value)
+    return bool(values) and all(
+        isinstance(v, str) and v and "*" not in v and "?" not in v and v.lower() != "anonymous" for v in values
+    )
 
 
 def _as_list(value: Any) -> list[Any]:
