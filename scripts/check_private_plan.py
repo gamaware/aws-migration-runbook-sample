@@ -182,9 +182,15 @@ def violations(plan: dict[str, Any]) -> list[str]:
             if after.get("cidr_ipv4") in WORLD or after.get("cidr_ipv6") in WORLD:
                 found.append(f"{address}: ingress from 0.0.0.0/0 or ::/0 on port {after.get('from_port')}")
         elif rtype == "aws_ecs_service":
-            for net in after.get("network_configuration") or []:
-                if net.get("assign_public_ip"):
+            # A value known only after apply could be true, so it is refused like true.
+            nets_unknown = unknown.get("network_configuration")
+            for i, net in enumerate(after.get("network_configuration") or []):
+                net_unknown = nets_unknown[i] if isinstance(nets_unknown, list) and i < len(nets_unknown) else {}
+                maybe_public = isinstance(net_unknown, dict) and net_unknown.get("assign_public_ip")
+                if net.get("assign_public_ip") or maybe_public:
                     found.append(f"{address}: ECS tasks must run with assign_public_ip = false")
+            if nets_unknown is True:
+                found.append(f"{address}: ECS network configuration is unknown until apply")
         elif rtype == "aws_subnet" and after.get("map_public_ip_on_launch"):
             found.append(f"{address}: subnet maps public IP addresses on launch")
         elif rtype == "aws_instance" and after.get("associate_public_ip_address"):
@@ -195,6 +201,10 @@ def violations(plan: dict[str, Any]) -> list[str]:
             found.append(f"{address}: default route to the internet")
         elif rtype in ("aws_route_table", "aws_default_route_table"):
             routes_unknown = unknown.get("route")
+            unknown_list = isinstance(routes_unknown, list) and any(routes_unknown) and not after.get("route")
+            if routes_unknown is True or unknown_list:
+                found.append(f"{address}: routes are unknown until apply")
+                continue
             for i, route in enumerate(after.get("route") or []):
                 route_unknown = (
                     routes_unknown[i] if isinstance(routes_unknown, list) and i < len(routes_unknown) else {}
