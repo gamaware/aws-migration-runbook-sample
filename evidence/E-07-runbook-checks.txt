@@ -8,7 +8,7 @@ PASS RUN-07 each rollback procedure has an owner, a duration within the RTO and 
 PASS RUN-08 rollback triggers have numeric thresholds and point at a procedure
 PASS RUN-09 go/no-go criteria are numeric and each checkpoint step lists exactly its criteria
 PASS RUN-10 numbers in the criteria match the inventory, the prerequisites and the smoke tests
-PASS RUN-11 TTLs drop early enough, the weighted pairs exist and the switch covers every name
+PASS RUN-11 TTLs drop early enough, the public records go away and the switch covers every name
 PASS RUN-12 every validation query in the runbook exists in validation.sql, and no other
 PASS RUN-13 jobs that write to the database or run on a moving server stop before T-0
 PASS RUN-14 the runbook stops the forward task and starts the reverse task inside the freeze

@@ -8,8 +8,10 @@
 
 Wave 1 moves the warehouse web app (SRV-03, SRV-04), the inventory API (SRV-05, SRV-06), the HAProxy pair (SRV-01,
 SRV-02) and the PostgreSQL primary (SRV-07) to AWS, and retires the streaming replica (SRV-08) at the end of hypercare.
-Warehouse staff and handheld scanners reach `warehouse.example.com`; the storefront, which already runs on AWS, reaches
-the inventory API at `api.example.com`. Both names move together.
+Warehouse staff and handheld scanners reach `warehouse.example.com` from the corporate network; the storefront, which
+already runs on AWS, reaches the inventory API at `api.example.com` from its own VPC. Both names move together. On AWS
+both names resolve only privately: a Route 53 private hosted zone holds the weighted pairs, the corporate DNS servers
+forward the two names to a Resolver inbound endpoint over the VPN, and the load balancer is internal (ADR 0006).
 
 - Window: Sunday 00:30 to 04:30 US Central time. T-0 is 02:00, the start of the write freeze.
 - Write-freeze budget: 30 minutes (`max_write_freeze_minutes` in `data/synthetic/applications.csv`).
@@ -34,9 +36,9 @@ Every prerequisite is closed, with its evidence linked in the change record, bef
 
 | ID | Prerequisite | Owner | Due | Evidence |
 | --- | --- | --- | --- | --- |
-| P-01 | `example.com` is hosted in Route 53 and its delegation answers from the Route 53 name servers | NET | T-14d | `dig NS example.com` output |
-| P-02 | Both Site-to-Site VPN tunnels are up, and `aws dms test-connection` succeeds from the replication instance to SRV-07 | NET | T-14d | Tunnel status and test-connection result |
-| P-03 | The target environment is applied with default weights (onprem 100, aws 0), a fresh `terraform plan` shows no changes, and the `alb_dns_name` and `alb_zone_id` outputs are copied into the change record for the break-glass path | CL | T-10d | Plan output in the change record |
+| P-01 | `example.com` is hosted in Route 53 and its delegation answers from the Route 53 name servers; the public zone keeps only the ACM validation records for the wave 1 names | NET | T-14d | `dig NS example.com` output |
+| P-02 | Both Site-to-Site VPN tunnels are up, the corporate network routes 10.60.0.0/16 into them, the storefront team routes 10.60.0.0/16 through `terraform output storefront_peering_connection_id`, and `aws dms test-connection` succeeds from the replication instance to SRV-07 | NET | T-14d | Tunnel status, storefront route table and test-connection result |
+| P-03 | The target environment is applied with default weights (onprem 100, aws 0), a fresh `terraform plan` shows no changes, and the `alb_dns_name`, `alb_zone_id` and `private_zone_id` outputs are copied into the change record for the break-glass path | CL | T-10d | Plan output in the change record |
 | P-04 | EXT-CARRIER: the parcel carrier allowlists the NAT gateway addresses from `terraform output nat_public_ips` next to the current egress address | APP | T-10d | Provider confirmation |
 | P-05 | EXT-NAS: the backup owner accepts RDS automated backups (14 days) plus the final dump in C-07 in place of the nightly NAS dump (JOB-03) | DBA | T-10d | Signed backup plan |
 | P-06 | `wal_level = logical` on SRV-07; `dms_user` exists on SRV-07 with REPLICATION and superuser (the reverse target sets `session_replication_role`) and on RDS with the `rds_replication` and `rds_superuser` roles; both DMS secrets hold host, port, username and password | DBA | T-10d | `SHOW wal_level`, secret versions present |
@@ -45,7 +47,7 @@ Every prerequisite is closed, with its evidence linked in the change record, bef
 | P-09 | A full rehearsal on a restored copy measured the write freeze and closed every issue it found | CL | T-5d | Rehearsal log with timings |
 | P-10 | Web and API images are built, scanned and pinned by digest, and their smoke tests pass against RDS in read-only mode | APP | T-3d | CI run and smoke report |
 | P-11 | BIZ approves the window; the maintenance banner and the notice to warehouse staff are scheduled | BIZ | T-3d | Approved change record |
-| P-12 | Dashboards and alarms exist for ALB 5xx and latency, RDS CPU and connections, and DMS `CDCLatencySource` and `CDCLatencyTarget` | NET | T-3d | Dashboard link |
+| P-12 | Dashboards and alarms exist for ALB 5xx and latency, RDS CPU and connections, and DMS `CDCLatencySource` and `CDCLatencyTarget`; ALB access logs arrive under `harbor-prod/alb` in the central log archive bucket | NET | T-3d | Dashboard link and a delivered log object |
 | P-13 | The rollback path was rehearsed: reverse task started and stopped on the rehearsal copy, weight flip tested on `cutover-test.example.com` | CL | T-3d | Rehearsal log |
 
 ## Timed checklist
@@ -55,8 +57,8 @@ procedure that applies if the step fails.
 
 | ID | T-offset | Duration (min) | Owner | Action | Verification | Rollback |
 | --- | --- | --- | --- | --- | --- | --- |
-| C-01 | T-72h | 15 | NET | Lower the TTL of `warehouse.example.com` and `api.example.com` from 3600 to 60 seconds | Authoritative answer shows TTL 60 | R-01 |
-| C-02 | T-48h | 20 | NET | Convert both names to weighted pairs with `runbooks/dns/convert-to-weighted.json`, import the onprem members, then apply the aws members at weight 0 | `terraform plan` shows no changes; both names still answer 203.0.113.x | R-01 |
+| C-01 | T-72h | 15 | NET | Lower the TTL of the public `warehouse.example.com` and `api.example.com` records from 3600 to 60 seconds | Authoritative answer shows TTL 60 | R-01 |
+| C-02 | T-48h | 20 | NET | Point the corporate DNS servers' conditional forwarders for both names at `terraform output resolver_inbound_ips`, confirm they answer from the private hosted zone, then delete the public records with `runbooks/dns/remove-public-records.json` | A corporate workstation and a storefront task resolve both names to 203.0.113.x; public DNS answers NXDOMAIN | R-01 |
 | C-03 | T-24h | 30 | DBA | Export the history of `audit.request_log` (excluded from DMS) with `pg_dump` to a private Amazon S3 bucket encrypted with SSE-KMS | Object row count equals `SELECT count(*)` on SRV-07 | R-01 |
 | C-04 | T-24h | 10 | CL | Go/no-go checkpoint 1: criteria G-01 and G-04 | Decision recorded in the change record | R-01 |
 | C-05 | T-90m | 10 | CL | Open the bridge call and confirm every role is present | Roll call logged | R-01 |
@@ -99,8 +101,9 @@ Every criterion has a number. A missing value counts as no-go.
 
 ## DNS switch
 
-The switch changes Route 53 weights only. Both names were converted to weighted pairs at C-02, so the change reaches
-resolvers within one 60-second TTL.
+The switch changes Route 53 weights only, in the private hosted zone. Both names have resolved from that zone since
+C-02, through the Resolver inbound endpoint for the corporate network and through the zone association for the
+storefront VPC, so the change reaches every client within one 60-second TTL.
 
 Primary path, from `infra/terraform/envs/production` (the plan must show exactly four record updates):
 
@@ -110,7 +113,7 @@ terraform apply switch.tfplan
 terraform output active_target   # aws
 ```
 
-Check from outside the data center:
+Check from a corporate workstation (over the VPN) and from a storefront task:
 
 ```bash
 dig +short warehouse.example.com
@@ -124,10 +127,11 @@ and send it in one call, which updates all four members at once. Reconcile Terra
 
 ```bash
 set -u
-# ALB_DNS_NAME and ALB_ZONE_ID come from the change record (P-03), not from Terraform.
+# ALB_DNS_NAME, ALB_ZONE_ID and ZONE_ID (the private hosted zone) come from the change record (P-03), not from
+# Terraform. A lookup by name would find the public example.com zone first.
 export ALB_DNS_NAME="<from the change record>" ALB_ZONE_ID="<from the change record>"
+ZONE_ID="<private_zone_id from the change record>"
 export ONPREM_WEIGHT=0 AWS_WEIGHT=100
-ZONE_ID="$(aws route53 list-hosted-zones-by-name --dns-name example.com --query 'HostedZones[0].Id' --output text)"
 batch="$(mktemp)" && trap 'rm -f "$batch"' EXIT
 envsubst '$ONPREM_WEIGHT $AWS_WEIGHT $ALB_ZONE_ID $ALB_DNS_NAME' < runbooks/dns/change-batch.json.tpl > "$batch"
 aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-batch "file://$batch"

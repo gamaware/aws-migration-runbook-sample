@@ -1,7 +1,8 @@
 # Smoke tests for the wave 1 cutover
 
-Run at C-17, before the DNS switch, against the load balancer. `curl --resolve` sends each request to the
-load balancer while keeping the real host name, so TLS and host routing are tested as users will see them:
+Run at C-17, before the DNS switch, against the load balancer from a corporate workstation: the load balancer is
+internal, so it answers only over the VPN. `curl --resolve` sends each request to it while keeping the real host
+name, so TLS and host routing are tested as users will see them:
 
 ```bash
 ALB_IP="$(dig +short "$(terraform output -raw alb_dns_name)" | head -1)"

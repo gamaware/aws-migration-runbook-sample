@@ -316,7 +316,7 @@ def _first_table(path: Path) -> list[dict[str, str]]:
 
 
 def dns_switch_is_prepared(rb: Runbook, m: Migration) -> Result:
-    r = Result("RUN-11", "TTLs drop early enough, the weighted pairs exist and the switch covers every name")
+    r = Result("RUN-11", "TTLs drop early enough, the public records go away and the switch covers every name")
     names = [rec["name"] for rec in m.target["records"]]
     old_ttl = max(int(m.dns_records[n]["ttl"]) for n in names)
     ttl_step = rb.step(r"\bTTL\b")
@@ -336,18 +336,19 @@ def dns_switch_is_prepared(rb: Runbook, m: Migration) -> Result:
             r.fail(f"{ttl_step['ID']} does not lower the TTL of {name}")
         if name not in rb.sections["DNS switch"].text and name not in switch["Action"]:
             r.fail(f"the DNS switch does not mention {name}")
-    batch_path = m.root / "runbooks" / "dns" / "convert-to-weighted.json"
+    # The weighted pairs live in the private hosted zone that Terraform creates (ADR 0006). The public zone only loses
+    # the old simple records, once the corporate resolvers forward the names to the private zone.
+    batch_path = m.root / "runbooks" / "dns" / "remove-public-records.json"
     changes = json.loads(batch_path.read_text(encoding="utf-8"))["Changes"] if batch_path.is_file() else []
     for name in names:
         deletes = [c for c in changes if c["Action"] == "DELETE" and c["ResourceRecordSet"]["Name"] == name]
-        creates = [c for c in changes if c["Action"] == "CREATE" and c["ResourceRecordSet"]["Name"] == name]
         value = m.dns_records[name]["value"]
         if len(deletes) != 1 or deletes[0]["ResourceRecordSet"]["TTL"] != new_ttl:
-            r.fail(f"convert-to-weighted.json must delete {name} with the lowered TTL {new_ttl}")
+            r.fail(f"remove-public-records.json must delete {name} with the lowered TTL {new_ttl}")
         elif deletes[0]["ResourceRecordSet"]["ResourceRecords"] != [{"Value": value}]:
-            r.fail(f"convert-to-weighted.json deletes {name} with a value other than {value}")
-        if len(creates) != 1 or creates[0]["ResourceRecordSet"].get("Weight") != 100:
-            r.fail(f"convert-to-weighted.json must create the onprem member of {name} with weight 100")
+            r.fail(f"remove-public-records.json deletes {name} with a value other than {value}")
+    if any(c["Action"] != "DELETE" for c in changes):
+        r.fail("remove-public-records.json may only delete; the weighted pairs belong in the private hosted zone")
     template = (m.root / "runbooks" / "dns" / "change-batch.json.tpl").read_text(encoding="utf-8")
     for name in names:
         if template.count(f'"Name": "{name}"') != 2:
