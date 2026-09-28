@@ -36,13 +36,41 @@ run "data_tier_has_no_internet_route" {
   command = apply
 
   assert {
-    condition     = length(aws_route.app_internet) == 2 && alltrue([for r in concat(aws_route.app_internet, [aws_route.public_internet]) : r.route_table_id != aws_route_table.data.id])
+    condition     = length(aws_route.app_internet) == 2 && alltrue([for r in concat(aws_route.app_internet, aws_route.public_internet) : r.route_table_id != aws_route_table.data.id])
     error_message = "Only application route tables get a NAT route; the data route table relies on VPN propagation."
   }
 
   assert {
     condition     = aws_vpn_gateway_route_propagation.data.vpn_gateway_id == aws_vpn_gateway.this.id
     error_message = "The data route table must learn the on-premises routes from the VPN gateway."
+  }
+}
+
+run "private_only_mode_has_no_internet_path" {
+  command = apply
+
+  variables {
+    internet_egress = false
+  }
+
+  assert {
+    condition     = length(aws_internet_gateway.this) == 0 && length(aws_nat_gateway.this) == 0 && length(aws_eip.nat) == 0
+    error_message = "Without internet egress the module must not create an internet gateway, NAT gateways or Elastic IPs."
+  }
+
+  assert {
+    condition     = length(aws_subnet.public) == 0 && length(aws_route.public_internet) == 0 && length(aws_route.app_internet) == 0
+    error_message = "Without internet egress there are no public subnets and no default routes."
+  }
+
+  assert {
+    condition     = length(aws_subnet.app) == 2 && length(aws_subnet.data) == 2 && length(aws_vpn_gateway_route_propagation.app) == 2
+    error_message = "The application and data tiers still exist and learn the data center routes from the VPN."
+  }
+
+  assert {
+    condition     = alltrue([for v in values(output.internet_exposure) : v == 0])
+    error_message = "internet_exposure must report zero for every internet-facing resource type."
   }
 }
 

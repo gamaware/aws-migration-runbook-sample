@@ -2,6 +2,11 @@
 # VPN tunnel options, create PostgreSQL 16 with logical replication on, and keep the database private. Everything
 # carries purpose=portfolio-test; `terraform test` destroys it at the end of the run and scripts/test_live.sh checks
 # that no tagged resource is left.
+#
+# Private-only (ADR 0005): the network module runs with internet_egress = false, so the run creates no internet
+# gateway, public subnet, NAT gateway, Elastic IP or default route. The only path out of the VPC is the VPN to the
+# on-premises CIDR. infra/terraform/tests/live_private asserts this offline, and scripts/test_live.sh refuses to run
+# when scripts/check_private_plan.py finds an internet-facing resource in the plan.
 
 provider "aws" {
   region  = var.region
@@ -54,6 +59,8 @@ module "network" {
   vpn_peer_ip = "203.0.113.20"
   vpn_bgp_asn = 65010
   kms_key_arn = aws_kms_key.live.arn
+
+  internet_egress = false
 }
 
 module "database" {

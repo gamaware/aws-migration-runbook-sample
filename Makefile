@@ -16,7 +16,9 @@ TFLINT    ?= tflint
 BUILD     := build
 
 TF_MODULES := network app database dms dns
-TF_ROOTS   := $(addprefix infra/terraform/modules/,$(TF_MODULES)) infra/terraform/envs/production
+# tests/live_private plans the live-test root with the mock provider and asserts it is private-only (ADR 0005).
+TF_ROOTS   := $(addprefix infra/terraform/modules/,$(TF_MODULES)) infra/terraform/envs/production \
+	infra/terraform/tests/live_private
 TF_VALIDATE_ONLY := infra/terraform/tests/live
 
 export TF_IN_AUTOMATION := 1
@@ -34,7 +36,7 @@ python-lint:
 	$(RUFF) check scripts tests
 	$(RUFF) format --check scripts tests
 
-## test: pytest; every plan and runbook rule is shown to fail on the mistake it exists to catch
+## test: pytest; every plan, runbook and live-test pre-flight rule is shown to fail on the mistake it exists to catch
 test:
 	$(PYTEST)
 
@@ -94,7 +96,8 @@ report:
 sql-check:
 	scripts/sql_check.sh
 
-## test-live: MANUAL. Real AWS in the dev sandbox profile, tagged purpose=portfolio-test, destroyed in the same run
+## test-live: MANUAL. Real AWS in the dev sandbox profile, private-only (the plan pre-flight refuses anything
+## internet-facing), tagged purpose=portfolio-test, destroyed in the same run
 test-live:
 	scripts/test_live.sh
 

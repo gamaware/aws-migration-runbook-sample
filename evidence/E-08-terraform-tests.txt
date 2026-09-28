@@ -2,13 +2,14 @@
 tests/network.tftest.hcl... in progress
   run "one_subnet_per_tier_per_az"... pass
   run "data_tier_has_no_internet_route"... pass
+  run "private_only_mode_has_no_internet_path"... pass
   run "vpn_routes_only_the_data_center"... pass
   run "flow_logs_capture_all_traffic"... pass
   run "rejects_overlapping_cidrs"... pass
   run "rejects_single_az"... pass
 tests/network.tftest.hcl... tearing down
 tests/network.tftest.hcl... pass
-Success! 6 passed, 0 failed.
+Success! 7 passed, 0 failed.
 == infra/terraform/modules/app
 tests/app.tftest.hcl... in progress
   run "http_only_redirects_to_https"... pass
@@ -66,3 +67,9 @@ tests/production.tftest.hcl... in progress
 tests/production.tftest.hcl... tearing down
 tests/production.tftest.hcl... pass
 Success! 4 passed, 0 failed.
+== infra/terraform/tests/live_private
+tests/private_only.tftest.hcl... in progress
+  run "live_root_is_private_only"... pass
+tests/private_only.tftest.hcl... tearing down
+tests/private_only.tftest.hcl... pass
+Success! 1 passed, 0 failed.

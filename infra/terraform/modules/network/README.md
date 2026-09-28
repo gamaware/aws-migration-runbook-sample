@@ -62,6 +62,7 @@ Tests: `tests/network.tftest.hcl`.
 | vpc\_cidr | CIDR block of the target VPC. | `string` | n/a | yes |
 | vpn\_peer\_ip | Public IP of the on-premises VPN device (customer gateway). | `string` | n/a | yes |
 | flow\_log\_retention\_days | Retention of the VPC flow log group in days. | `number` | `365` | no |
+| internet\_egress | Create the internet gateway, public subnets, NAT gateways and default routes. The live test sets false. | `bool` | `true` | no |
 | vpn\_bgp\_asn | BGP ASN of the customer gateway. The tunnels use static routes; AWS still requires an ASN. | `number` | `65000` | no |
 
 ## Outputs
@@ -70,6 +71,7 @@ Tests: `tests/network.tftest.hcl`.
 | ---- | ----------- |
 | app\_subnet\_ids | Application subnets, one per Availability Zone (ECS tasks and the DMS replication instance). |
 | data\_subnet\_ids | Data subnets without an internet route, one per Availability Zone (RDS). |
+| internet\_exposure | Counts of resources that make the VPC reachable from, or route to, the internet; all zero when internet\_egress is false. |
 | nat\_public\_ips | Egress addresses the parcel carrier must allowlist before cutover. |
 | public\_subnet\_ids | Public subnets, one per Availability Zone (ALB and NAT gateways). |
 | vpc\_cidr | CIDR block of the target VPC. |

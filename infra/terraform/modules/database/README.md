@@ -60,5 +60,6 @@ after the DNS switch. On-premises clients are limited to single hosts. Tests: `t
 | master\_user\_secret\_arn | Secrets Manager secret that RDS manages for the master user. |
 | onprem\_client\_cidrs | On-premises hosts admitted on 5432; tests compare it with the hybrid links in the plan. |
 | port | PostgreSQL port. |
+| publicly\_accessible | Whether RDS gives the instance a public address; always false. |
 | security\_group\_id | Security group of the database. |
 <!-- END_TF_DOCS -->

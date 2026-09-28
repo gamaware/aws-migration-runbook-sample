@@ -62,3 +62,9 @@ variable "flow_log_retention_days" {
   type        = number
   default     = 365
 }
+
+variable "internet_egress" {
+  description = "Create the internet gateway, public subnets, NAT gateways and default routes. The live test sets false."
+  type        = bool
+  default     = true
+}

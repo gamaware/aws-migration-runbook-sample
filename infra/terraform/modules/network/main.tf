@@ -7,6 +7,11 @@ locals {
   public_cidrs = [for i in range(local.az_count) : cidrsubnet(var.vpc_cidr, 24 - tonumber(split("/", var.vpc_cidr)[1]), i)]
   app_cidrs    = [for i in range(local.az_count) : cidrsubnet(var.vpc_cidr, 24 - tonumber(split("/", var.vpc_cidr)[1]), 10 + i)]
   data_cidrs   = [for i in range(local.az_count) : cidrsubnet(var.vpc_cidr, 24 - tonumber(split("/", var.vpc_cidr)[1]), 20 + i)]
+
+  # Without internet egress the module creates no internet gateway, public subnets, NAT gateways, Elastic IPs or
+  # default routes: the VPC reaches only the data center over the VPN. The live test uses it that way.
+  public_count = var.internet_egress ? local.az_count : 0
+  igw_count    = var.internet_egress ? 1 : 0
 }
 
 resource "aws_vpc" "this" {
@@ -23,13 +28,15 @@ resource "aws_default_security_group" "this" {
 }
 
 resource "aws_internet_gateway" "this" {
+  count = local.igw_count
+
   vpc_id = aws_vpc.this.id
 
   tags = { Name = var.name }
 }
 
 resource "aws_subnet" "public" {
-  count = local.az_count
+  count = local.public_count
 
   vpc_id                  = aws_vpc.this.id
   cidr_block              = local.public_cidrs[count.index]
@@ -64,7 +71,7 @@ resource "aws_subnet" "data" {
 # One NAT gateway per Availability Zone. Their Elastic IPs are the new source addresses the parcel carrier must
 # allowlist before cutover (runbook prerequisite P-04).
 resource "aws_eip" "nat" {
-  count = local.az_count
+  count = local.public_count
 
   domain = "vpc"
 
@@ -72,7 +79,7 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_nat_gateway" "this" {
-  count = local.az_count
+  count = local.public_count
 
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
@@ -83,22 +90,42 @@ resource "aws_nat_gateway" "this" {
 }
 
 resource "aws_route_table" "public" {
+  count = local.igw_count
+
   vpc_id = aws_vpc.this.id
 
   tags = { Name = "${var.name}-public" }
 }
 
 resource "aws_route" "public_internet" {
-  route_table_id         = aws_route_table.public.id
+  count = local.igw_count
+
+  route_table_id         = aws_route_table.public[0].id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.this.id
+  gateway_id             = aws_internet_gateway.this[0].id
 }
 
 resource "aws_route_table_association" "public" {
-  count = local.az_count
+  count = local.public_count
 
   subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.public.id
+  route_table_id = aws_route_table.public[0].id
+}
+
+# The internet gateway and the public route table gained a count for the private-only mode; existing state moves.
+moved {
+  from = aws_internet_gateway.this
+  to   = aws_internet_gateway.this[0]
+}
+
+moved {
+  from = aws_route_table.public
+  to   = aws_route_table.public[0]
+}
+
+moved {
+  from = aws_route.public_internet
+  to   = aws_route.public_internet[0]
 }
 
 resource "aws_route_table" "app" {
@@ -110,7 +137,7 @@ resource "aws_route_table" "app" {
 }
 
 resource "aws_route" "app_internet" {
-  count = local.az_count
+  count = local.public_count
 
   route_table_id         = aws_route_table.app[count.index].id
   destination_cidr_block = "0.0.0.0/0"

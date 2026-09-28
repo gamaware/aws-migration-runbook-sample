@@ -27,3 +27,8 @@ output "onprem_client_cidrs" {
   description = "On-premises hosts admitted on 5432; tests compare it with the hybrid links in the plan."
   value       = sort([for r in aws_vpc_security_group_ingress_rule.from_onprem : r.cidr_ipv4])
 }
+
+output "publicly_accessible" {
+  description = "Whether RDS gives the instance a public address; always false."
+  value       = aws_db_instance.this.publicly_accessible
+}
