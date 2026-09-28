@@ -94,6 +94,13 @@ def test_missing_section_stops_the_other_rules(sandbox) -> None:
             "RUN-11",
             id="public-record-kept",
         ),
+        pytest.param(
+            "runbooks/dns/switch-api.example.com.json.tpl",
+            '"Name": "api.example.com",\n        "Type": "A",\n        "SetIdentifier": "aws"',
+            '"Name": "warehouse.example.com",\n        "Type": "A",\n        "SetIdentifier": "aws"',
+            "RUN-11",
+            id="break-glass-batch-crosses-zones",
+        ),
         pytest.param("runbooks/sql/validation.sql", "-- V-07:", "-- V-7:", "RUN-12", id="validation-query-missing"),
         pytest.param(RUNBOOK, "JOB-03 on SRV-07 and JOB-04", "JOB-04", "RUN-13", id="backup-job-left-running"),
         pytest.param(RUNBOOK, "re-enable JOB-01 and JOB-02, resume", "resume", "RUN-13", id="batch-never-re-enabled"),

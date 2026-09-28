@@ -77,7 +77,7 @@ Tests: `tests/app.tftest.hcl`.
 | Name | Description |
 | ---- | ----------- |
 | alb\_arn\_suffix | ARN suffix of the load balancer, used in CloudWatch metric queries during cutover. |
-| alb\_dns\_name | DNS name of the internal load balancer; the aws records in the private hosted zone alias to it. |
+| alb\_dns\_name | DNS name of the internal load balancer; the aws records in the private hosted zones alias to it. |
 | alb\_zone\_id | Hosted zone ID of the load balancer, needed for alias records. |
 | cluster\_name | Name of the ECS cluster. |
 | network\_exposure | What can reach the load balancer and where the tasks may connect; the tests assert none of it is the internet. |

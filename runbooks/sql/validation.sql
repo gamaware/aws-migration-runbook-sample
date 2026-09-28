@@ -28,19 +28,22 @@ BEGIN
 END $$;
 SELECT table_name, row_count FROM v02_counts ORDER BY table_name;
 
--- V-03: checksum of the last seven days of fulfillment orders and order lines
+-- V-03: checksum of the last seven days of fulfillment orders and order lines.
+-- The window ends at the newest order in the data, not at now(): two runs seconds apart on SRV-07 and RDS then hash
+-- the same rows. If the newest orders differ, V-04 fails as well.
+WITH cutoff AS (SELECT max(created_at) - interval '7 days' AS since FROM orders.orders)
 SELECT 'orders.orders' AS table_name,
        count(*) AS row_count,
        md5(string_agg(o::text, '|' ORDER BY o.order_id)) AS checksum
-FROM orders.orders AS o
-WHERE o.created_at >= now() - interval '7 days'
+FROM orders.orders AS o, cutoff
+WHERE o.created_at >= cutoff.since
 UNION ALL
 SELECT 'orders.order_lines',
        count(*),
        md5(string_agg(l::text, '|' ORDER BY l.order_id, l.line_no))
 FROM orders.order_lines AS l
-JOIN orders.orders AS o USING (order_id)
-WHERE o.created_at >= now() - interval '7 days'
+JOIN orders.orders AS o USING (order_id), cutoff
+WHERE o.created_at >= cutoff.since
 ORDER BY 1;
 
 -- V-04: highest order ID and newest order timestamp

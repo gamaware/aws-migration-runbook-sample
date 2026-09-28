@@ -75,13 +75,18 @@ run "nothing_faces_the_internet" {
   }
 
   assert {
-    condition     = module.app.network_exposure.access_log_bucket == "harbor-log-archive-444455556666-us-east-1"
+    condition     = module.app.network_exposure.access_log_bucket == "harbor-log-archive-777788889999-us-east-1"
     error_message = "Access logs must go to the central log archive bucket named in plan/target.yaml."
   }
 
   assert {
     condition     = output.storefront_peering_connection_id != null
     error_message = "The storefront VPC must be peered, or it cannot reach the internal load balancer."
+  }
+
+  assert {
+    condition     = join(",", sort(keys(output.private_zone_ids))) == "api.example.com,warehouse.example.com"
+    error_message = "Each wave 1 name gets its own private zone; a private example.com zone would shadow the storefront's other public names."
   }
 }
 

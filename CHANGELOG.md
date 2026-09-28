@@ -30,8 +30,8 @@ dated revisions rather than semantic versions of an interface.
 
 - The wave 1 load balancer is internal, in the private application subnets, and admits only the corporate network
   (over the VPN), the peered storefront VPC and the VPC itself (ADR 0006).
-- The weighted records live in a Route 53 private hosted zone associated with the wave 1 and storefront VPCs; a
-  Resolver inbound endpoint serves the corporate DNS servers. Runbook step C-02 deletes the public records with
+- The weighted records live in Route 53 private hosted zones, one per name, associated with the wave 1 and storefront
+  VPCs; a Resolver inbound endpoint serves the corporate DNS servers. Runbook step C-02 deletes the public records with
   `runbooks/dns/remove-public-records.json` instead of converting them, and RUN-11 checks that batch.
 - ECS tasks and the DMS instance reach AWS APIs through VPC endpoints (S3 gateway; ECR, CloudWatch Logs and Secrets
   Manager interface endpoints). No security group rule sends egress to `0.0.0.0/0`; the only destinations outside

@@ -43,9 +43,9 @@ output "app_db_secret_arn" {
   value       = aws_secretsmanager_secret.app_db.arn
 }
 
-output "private_zone_id" {
-  description = "Private hosted zone of the wave 1 names, used by the break-glass DNS change batch (prerequisite P-03)."
-  value       = module.dns.zone_id
+output "private_zone_ids" {
+  description = "Private hosted zone of each wave 1 name, used by the break-glass DNS change batches (prerequisite P-03)."
+  value       = module.dns.zone_ids
 }
 
 output "resolver_inbound_ips" {

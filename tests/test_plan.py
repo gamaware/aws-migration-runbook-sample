@@ -97,6 +97,13 @@ def test_duplicate_classification_is_a_load_error(sandbox) -> None:
             "PLAN-10",
             id="lob-limit-truncates-orders",
         ),
+        pytest.param(
+            "migration/dms/task-settings-reverse.json",
+            '"ApplyErrorInsertPolicy": "SUSPEND_TABLE"',
+            '"ApplyErrorInsertPolicy": "LOG_ERROR"',
+            "PLAN-10",
+            id="reverse-task-logs-and-skips-a-failed-insert",
+        ),
     ],
 )
 def test_rule_catches_its_mistake(sandbox, relative: str, old: str, new: str, rule: str) -> None:

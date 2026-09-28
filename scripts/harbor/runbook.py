@@ -336,8 +336,8 @@ def dns_switch_is_prepared(rb: Runbook, m: Migration) -> Result:
             r.fail(f"{ttl_step['ID']} does not lower the TTL of {name}")
         if name not in rb.sections["DNS switch"].text and name not in switch["Action"]:
             r.fail(f"the DNS switch does not mention {name}")
-    # The weighted pairs live in the private hosted zone that Terraform creates (ADR 0006). The public zone only loses
-    # the old simple records, once the corporate resolvers forward the names to the private zone.
+    # The weighted pairs live in the private hosted zones that Terraform creates (ADR 0006). The public zone only
+    # loses the old simple records, once the corporate resolvers forward the names to the private zones.
     batch_path = m.root / "runbooks" / "dns" / "remove-public-records.json"
     changes = json.loads(batch_path.read_text(encoding="utf-8"))["Changes"] if batch_path.is_file() else []
     for name in names:
@@ -348,11 +348,17 @@ def dns_switch_is_prepared(rb: Runbook, m: Migration) -> Result:
         elif deletes[0]["ResourceRecordSet"]["ResourceRecords"] != [{"Value": value}]:
             r.fail(f"remove-public-records.json deletes {name} with a value other than {value}")
     if any(c["Action"] != "DELETE" for c in changes):
-        r.fail("remove-public-records.json may only delete; the weighted pairs belong in the private hosted zone")
-    template = (m.root / "runbooks" / "dns" / "change-batch.json.tpl").read_text(encoding="utf-8")
+        r.fail("remove-public-records.json may only delete; the weighted pairs belong in the private hosted zones")
+    # Each name has its own private zone (ADR 0006), so the break-glass path sends one change batch per zone.
     for name in names:
-        if template.count(f'"Name": "{name}"') != 2:
-            r.fail(f"change-batch.json.tpl must flip both members of {name}")
+        template_path = m.root / "runbooks" / "dns" / f"switch-{name}.json.tpl"
+        if not template_path.is_file():
+            r.fail(f"{template_path.name} is missing; the break-glass path needs one batch per private zone")
+            continue
+        template = template_path.read_text(encoding="utf-8")
+        others = [n for n in names if n != name and f'"Name": "{n}"' in template]
+        if template.count(f'"Name": "{name}"') != 2 or others:
+            r.fail(f"{template_path.name} must flip both members of {name} and touch no other name")
     if "traffic_weights" not in switch["Action"]:
         r.fail(f"{switch['ID']} must change traffic_weights, the only input of the DNS module that moves traffic")
     return r

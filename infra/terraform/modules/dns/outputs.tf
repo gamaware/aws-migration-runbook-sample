@@ -8,9 +8,9 @@ output "record_names" {
   value       = sort(keys(var.records))
 }
 
-output "zone_id" {
-  description = "ID of the private hosted zone; the break-glass change batch targets it (prerequisite P-03)."
-  value       = aws_route53_zone.private.zone_id
+output "zone_ids" {
+  description = "ID of the private hosted zone of each name; the break-glass change batches target them (prerequisite P-03)."
+  value       = { for name, zone in aws_route53_zone.private : name => zone.zone_id }
 }
 
 output "resolver_inbound_ips" {
