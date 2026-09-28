@@ -126,9 +126,9 @@ Architecture decision records follow the *Fundamentals of Software Architecture*
 ## Security and quality gates
 
 - **CI** ([`ci.yml`](.github/workflows/ci.yml)) runs `make verify` and calls the shared, SHA-pinned workflows from
-  [gamaware/.github](https://github.com/gamaware/.github): Markdown and link checks, actionlint and zizmor, gitleaks,
-  Semgrep, Trivy and Checkov, and the report build. Every workflow starts from `permissions: {}`, and no job gets
-  cloud credentials.
+  [gamaware/.github](https://github.com/gamaware/.github): Markdown, link and Vale checks, actionlint and zizmor,
+  gitleaks, Semgrep, Trivy and Checkov, and the report build. Every workflow starts from `permissions: {}`, and no
+  job gets cloud credentials.
 - **Pre-commit** runs hygiene hooks, detect-secrets, gitleaks, markdownlint, ruff, `terraform fmt`, `validate`,
   TFLint, terraform-docs, Checkov, shellcheck, shellharden, actionlint, zizmor and conventional commits.
 - **Checkov** skips sit inside the resource with a reason; skips that defer work name a risk in the report

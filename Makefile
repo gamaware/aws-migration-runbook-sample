@@ -1,6 +1,7 @@
-# Every target except test-live runs offline: no AWS account, no credentials. CI runs `make verify`, so a green
-# local run means a green pipeline. Tool downloads (Python packages, the Terraform provider, the TFLint ruleset)
-# happen on first use and are cached.
+# Every target except test-live runs offline: no AWS account, no credentials. `make verify` is the CI verify job.
+# CI also runs shared checks that are not part of it (see README "Security and quality gates"): Markdown, link and
+# Vale checks, actionlint and zizmor, gitleaks, Semgrep and Trivy, and the report PDF build. Tool downloads (Python
+# packages, the Terraform provider, the TFLint ruleset) happen on first use and are cached.
 
 SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
