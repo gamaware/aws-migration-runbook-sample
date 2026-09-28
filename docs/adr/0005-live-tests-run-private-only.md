@@ -21,11 +21,11 @@ production root keeps the default, because wave 1 needs the NAT egress addresses
 (prerequisite P-04).
 
 Before any apply, `scripts/test_live.sh` plans the live root with the exact test variables, converts the plan with
-`terraform show -json` and runs `scripts/check_private_plan.py` on it. The run stops on any internet-facing resource:
-a gateway, Elastic IP or default route to the internet, a load balancer that is not internal, security group ingress
-from `0.0.0.0/0` or `::/0`, an ECS task with a public IP, a subnet that maps public IPs or a publicly accessible
-database. The live assertions read the results of AWS API calls through Terraform; no health check crosses the
-internet.
+`terraform show -json` and runs `scripts/check_private_plan.py` on it. The run stops on any internet-facing resource: a
+gateway, Elastic IP or default route to the internet, a load balancer that is not internal, security group ingress from
+`0.0.0.0/0` or `::/0`, an ECS task with a public IP, a subnet that maps public IPs or a publicly accessible database,
+and any Route 53 resource or public S3, ECR, EKS or API endpoint. The live assertions read the results of AWS API calls
+through Terraform; no health check crosses the internet.
 
 ## Consequences
 
@@ -41,8 +41,9 @@ internet.
 resource, and `infra/terraform/tests/live_private`, which plans the live root with the mock provider and fails if it
 would create an internet gateway, public NAT gateway, Elastic IP, default route, public-IP subnet, a publicly
 accessible database or database ingress from `0.0.0.0/0` or `::/0`. The network module test
-`private_only_mode_has_no_internet_path` checks the module's private mode on its own. See
-[`docs/live-test.md`](../live-test.md).
+`private_only_mode_has_no_internet_path` checks the module's private mode on its own. `tests/test_live_scope.py`
+fails if the live root or any module it calls declares an `aws_route53_*` resource; the weighted-record cutover
+(ADR 0003) is tested offline only. See [`docs/live-test.md`](../live-test.md).
 
 ## Notes
 

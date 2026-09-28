@@ -46,13 +46,15 @@ same variables the test uses, writes `terraform show -json` of that plan to `bui
 `python3 scripts/check_private_plan.py` on it. The script exits non-zero and lists every internet-facing resource it
 finds: internet or egress-only gateways, public NAT gateways, Elastic IPs, default routes through a gateway, load
 balancers without `internal = true`, security group ingress from `0.0.0.0/0` or `::/0`, ECS services with a public IP,
-subnets that map public IPs, publicly accessible databases or DMS instances, Lambda function URLs, CloudFront,
-Global Accelerator, API Gateway HTTP APIs and REST APIs that are not private. On any finding the live test stops
-before the apply.
+subnets that map public IPs, publicly accessible databases or DMS instances, Lambda function URLs, CloudFront, Global
+Accelerator, API Gateway HTTP APIs and REST APIs that are not private. It also refuses any Route 53 resource (hosted
+zones, records, health checks), a public EKS API endpoint and public S3 or ECR access: an ECR Public repository, an S3
+website endpoint, a public bucket ACL, a public access block with any setting off, or a bucket or repository policy that
+allows any principal without a condition. On any finding the live test stops before the apply.
 
 ### Offline tests
 
-`make verify` runs two tests that fail if the live configuration turns public, with no AWS account:
+`make verify` runs three tests that fail if the live configuration turns public, with no AWS account:
 
 - `tests/test_check_private_plan.py` (pytest) shows that the pre-flight passes a private plan and refuses each kind of
   internet-facing resource.
@@ -60,6 +62,9 @@ before the apply.
   internet gateway, public NAT gateway, Elastic IP, default route or public-IP subnet, that the database is not
   publicly accessible and that no database ingress comes from `0.0.0.0/0` or `::/0`. Setting
   `internet_egress = true` in the live root makes it fail.
+- `tests/test_live_scope.py` (pytest) walks the live root and every module it calls and fails if any of them declares
+  an `aws_route53_*` resource. The weighted-record cutover (ADR 0003) stays in the offline plan, the `dns` module's
+  mock-provider tests and the runbook; the live test never creates a hosted zone, record or health check.
 
 ### Health checks
 
