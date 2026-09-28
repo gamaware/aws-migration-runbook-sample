@@ -1,0 +1,9 @@
+# Used by `make checkov` and the shared security workflow. Skips live inside the resources, each with a reason.
+directory:
+  - infra/terraform
+framework:
+  - terraform
+skip-path:
+  - tests/live
+quiet: true
+compact: true

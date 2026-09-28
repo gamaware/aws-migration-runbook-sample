@@ -1,0 +1,87 @@
+# 7R classification: one strategy per discovered server, with the reason and the option we rejected.
+# Strategy names follow AWS Prescriptive Guidance: retire, retain, rehost, relocate, repurchase, replatform, refactor.
+# scripts/check_plan.py fails if a server in data/synthetic/servers.csv is missing here or appears twice.
+
+components:
+  - id: SRV-01
+    strategy: replatform
+    target: Application Load Balancer (infra/terraform/modules/app)
+    rationale: >-
+      HAProxy only terminates TLS and routes by host name. An ALB does both, spans two Availability Zones and
+      removes two servers the platform team patches by hand.
+    rejected: Rehost HAProxy on EC2, which keeps the patching and the failover scripts.
+  - id: SRV-02
+    strategy: replatform
+    target: Application Load Balancer (infra/terraform/modules/app)
+    rationale: Standby half of the HAProxy pair; the ALB replaces both nodes.
+    rejected: Rehost HAProxy on EC2, as for SRV-01.
+  - id: SRV-03
+    strategy: replatform
+    target: ECS Fargate service "web" (infra/terraform/modules/app)
+    rationale: >-
+      The warehouse web app is a stateless Node.js process behind nginx and already reads its settings from
+      environment variables, so it runs in a container without code changes. Fargate removes OS patching.
+    rejected: Rehost both VMs with AWS Application Migration Service, which carries over the configuration drift
+      found between SRV-03 and SRV-04.
+  - id: SRV-04
+    strategy: replatform
+    target: ECS Fargate service "web" (infra/terraform/modules/app)
+    rationale: Second web app node; the ECS service runs two tasks across two Availability Zones instead.
+    rejected: Rehost with AWS Application Migration Service, as for SRV-03.
+  - id: SRV-05
+    strategy: replatform
+    target: ECS Fargate service "api" (infra/terraform/modules/app)
+    rationale: >-
+      Spring Boot jar with an embedded server and a health endpoint. It keeps a connection pool to PostgreSQL,
+      which suits a long-running task.
+    rejected: Refactor to AWS Lambda. The JVM start time and the pooled connections need rework, and no business
+      driver pays for it in this migration.
+  - id: SRV-06
+    strategy: replatform
+    target: ECS Fargate service "api" (infra/terraform/modules/app)
+    rationale: Second API node; covered by the two-task ECS service.
+    rejected: Refactor to AWS Lambda, as for SRV-05.
+  - id: SRV-07
+    strategy: replatform
+    target: Amazon RDS for PostgreSQL 16, Multi-AZ (infra/terraform/modules/database)
+    rationale: >-
+      A managed engine takes over backups, patching and failover that one DBA handles today. AWS DMS copies
+      rows logically (full load, then change data capture), so moving from 14 to 16 happens during the copy
+      and the rehearsal tests the application against 16 before cutover.
+    rejected: Rehost PostgreSQL on EC2, which keeps the DBA toil; Amazon Aurora, worth a later evaluation but
+      it adds a storage-model change to a move that is already changing the major version.
+  - id: SRV-08
+    strategy: retire
+    target: none (the Multi-AZ standby replaces the streaming replica)
+    rationale: >-
+      The replica exists for failover and for BI reads. Multi-AZ covers failover. BI (SRV-10) is repointed to
+      the RDS instance in wave 1 and moves to a managed service in wave 3.
+    rejected: A read replica on RDS; BI load is 11 percent CPU at p95 and does not need one.
+  - id: SRV-09
+    strategy: rehost
+    target: Amazon EC2 through AWS Application Migration Service (wave 2)
+    rationale: >-
+      The cron jobs read and write fixed local paths and call the SFTP server by IP. Rehosting moves them
+      unchanged; containerizing them needs code changes the operations team has not scheduled.
+    rejected: Replatform to ECS scheduled tasks, deferred until the jobs stop depending on local disk.
+  - id: SRV-10
+    strategy: repurchase
+    target: Amazon QuickSight (wave 3)
+    rationale: >-
+      The self-hosted BI tool serves 14 finance dashboards, and one engineer upgrades it by hand. A managed BI
+      service removes the server and that upkeep; the finance team rebuilds the dashboards during wave 3.
+    rejected: Rehost the BI server, which moves the manual upgrades into AWS unchanged.
+  - id: SRV-11
+    strategy: retain
+    target: stays in the data center
+    rationale: >-
+      Supplier contracts allowlist the SFTP source address. Changing it needs every supplier to update firewall
+      rules, so the server stays until the contracts renew. Batch jobs reach it over the Site-to-Site VPN.
+    rejected: AWS Transfer Family now, which is the planned target once the supplier allowlists can change.
+  - id: SRV-12
+    strategy: retire
+    target: static HTML export archived in a private, encrypted Amazon S3 bucket (wave 2)
+    rationale: >-
+      Access logs in the discovery sample show reads by 3 users and no edits. The content is exported once and
+      the server is switched off.
+    rejected: Rehost MediaWiki, which moves an unused and unsupported application.

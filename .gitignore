@@ -1,0 +1,38 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.tfplan
+tfplan*
+crash.log
+crash.*.log
+
+# Secrets
+.env
+.env.local
+*.pem
+*.key
+credentials.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Local build output (evidence regeneration, report intermediates, live-test logs)
+build/
+
+# Tools
+.firecrawl/
+.DS_Store
+
+# Local agent state
+.claude-flow/
+.claude/proven-config*
+
+# Vale packages, downloaded by vale sync
+styles/

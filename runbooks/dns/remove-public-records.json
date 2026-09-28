@@ -1,0 +1,23 @@
+{
+  "Comment": "C-02: delete the public simple records once the corporate resolvers forward both names to the private hosted zone",
+  "Changes": [
+    {
+      "Action": "DELETE",
+      "ResourceRecordSet": {
+        "Name": "warehouse.example.com",
+        "Type": "A",
+        "TTL": 60,
+        "ResourceRecords": [{ "Value": "203.0.113.10" }]
+      }
+    },
+    {
+      "Action": "DELETE",
+      "ResourceRecordSet": {
+        "Name": "api.example.com",
+        "Type": "A",
+        "TTL": 60,
+        "ResourceRecords": [{ "Value": "203.0.113.11" }]
+      }
+    }
+  ]
+}

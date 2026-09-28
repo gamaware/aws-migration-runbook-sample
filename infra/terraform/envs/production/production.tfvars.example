@@ -1,0 +1,5 @@
+# Copy to production.tfvars (git-ignored). CI writes the digests it built and scanned.
+images = {
+  web = "123456789012.dkr.ecr.us-east-1.amazonaws.com/harbor-web@sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  api = "123456789012.dkr.ecr.us-east-1.amazonaws.com/harbor-api@sha256:2222222222222222222222222222222222222222222222222222222222222222"
+}

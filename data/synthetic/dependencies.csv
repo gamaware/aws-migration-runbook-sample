@@ -1,0 +1,24 @@
+consumer,provider,port,protocol,purpose
+EXT-USERS,SRV-01,443,tcp,warehouse.example.com and api.example.com (active VIP)
+EXT-USERS,SRV-02,443,tcp,warehouse.example.com and api.example.com (standby VIP)
+SRV-01,SRV-03,8080,tcp,web app upstream
+SRV-01,SRV-04,8080,tcp,web app upstream
+SRV-01,SRV-05,8080,tcp,inventory API upstream
+SRV-01,SRV-06,8080,tcp,inventory API upstream
+SRV-02,SRV-03,8080,tcp,web app upstream
+SRV-02,SRV-04,8080,tcp,web app upstream
+SRV-02,SRV-05,8080,tcp,inventory API upstream
+SRV-02,SRV-06,8080,tcp,inventory API upstream
+SRV-03,SRV-01,443,tcp,web app calls api.example.com through the VIP
+SRV-04,SRV-01,443,tcp,web app calls api.example.com through the VIP
+SRV-05,SRV-07,5432,tcp,inventory API database connections
+SRV-06,SRV-07,5432,tcp,inventory API database connections
+SRV-05,EXT-CARRIER,443,tcp,parcel carrier label API (allowlists the source IP)
+SRV-06,EXT-CARRIER,443,tcp,parcel carrier label API (allowlists the source IP)
+SRV-08,SRV-07,5432,tcp,streaming replication
+SRV-07,EXT-NAS,2049,tcp,nightly pg_dump to the backup NAS
+SRV-09,SRV-07,5432,tcp,supplier inventory sync and packing-list jobs
+SRV-09,SRV-11,22,tcp,supplier inventory files over SFTP
+SRV-10,SRV-08,5432,tcp,BI dashboards read the replica
+EXT-SUPPLIERS,SRV-11,22,tcp,suppliers upload inventory files
+EXT-STAFF,SRV-12,443,tcp,intranet wiki
