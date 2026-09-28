@@ -94,7 +94,7 @@ Optional targets:
 `make test-live` shows the caller identity first, asks for confirmation, and refuses to run if
 `scripts/check_private_plan.py` finds anything internet-facing in the plan: the live test creates no internet gateway,
 NAT gateway, public load balancer or public ingress ([ADR 0005](docs/adr/0005-live-tests-run-private-only.md)). It
-tags everything `purpose=portfolio-test`, lets `terraform test` destroy the resources and lists anything left behind.
+tags everything `purpose=portfolio-test`, applies the checked plan, destroys the resources and lists anything left behind.
 It costs under USD 1 per run. Its logs go to `build/live/`, which is never committed. Details:
 [`docs/live-test.md`](docs/live-test.md).
 

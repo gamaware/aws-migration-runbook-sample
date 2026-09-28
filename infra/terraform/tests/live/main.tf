@@ -1,6 +1,6 @@
 # Live test root: the smallest slice of the wave 1 target that proves the parts a mock cannot. AWS must accept the
 # VPN tunnel options, create PostgreSQL 16 with logical replication on, and keep the database private. Everything
-# carries purpose=portfolio-test; `terraform test` destroys it at the end of the run and scripts/test_live.sh checks
+# carries purpose=portfolio-test; scripts/test_live.sh applies the checked plan, asserts, destroys and checks
 # that no tagged resource is left.
 #
 # Private-only (ADR 0005): the network module runs with internet_egress = false, so the run creates no internet
@@ -13,11 +13,11 @@ provider "aws" {
   profile = var.aws_profile
 
   default_tags {
-    tags = {
+    tags = merge(var.extra_tags, {
       purpose = "portfolio-test"
       project = "aws-migration-runbook-sample"
       run     = var.run_id
-    }
+    })
   }
 }
 

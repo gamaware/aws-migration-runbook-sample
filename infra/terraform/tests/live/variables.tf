@@ -18,3 +18,9 @@ variable "run_id" {
     error_message = "run_id must be 4 to 12 lowercase letters or digits."
   }
 }
+
+variable "extra_tags" {
+  description = "Tags the sandbox account requires on every create (a tag policy or SCP), set at run time by scripts/test_live.sh from TEST_LIVE_EXTRA_TAGS. Never commit values."
+  type        = map(string)
+  default     = {}
+}

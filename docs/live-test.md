@@ -3,8 +3,8 @@
 `make test-live` runs `scripts/test_live.sh`. It is manual, runs only in the sandbox account behind the `dev` profile,
 and is not part of `make verify` or CI. It deploys the smallest slice of the wave 1 target that a mock cannot prove,
 from the root in `infra/terraform/tests/live`: the VPC with its Site-to-Site VPN connection, and RDS for
-PostgreSQL 16 with logical replication on. `terraform test` applies the slice, checks it and destroys it in the same
-run.
+PostgreSQL 16 with logical replication on. The script applies the slice from the plan it checked, asserts on it and
+destroys it in the same run.
 
 ## Run
 
@@ -17,12 +17,15 @@ The script:
 
 1. Shows the caller identity of the profile (`AWS_LIVE_PROFILE`, default `dev`) and asks for confirmation.
 2. Runs the private-only pre-flight described below and stops if it fails.
-3. Runs `terraform test` in `infra/terraform/tests/live`. Everything carries the tags `purpose=portfolio-test` and
-   `run=<run id>`.
+3. Applies that exact plan file in `infra/terraform/tests/live`, asserts on the outputs (see Health checks) and
+   destroys it. Everything carries the tags `purpose=portfolio-test` and `run=<run id>`, plus any tags given at run
+   time in `TEST_LIVE_EXTRA_TAGS="Key1=value1,Key2=value2"` for an account whose tag policy or SCP requires them
+   (never commit the values). The state lives in `build/live/state-<run id>.tfstate`; if the destroy fails (an
+   expired SSO session, for example), the script keeps it and prints the command that retries the destroy.
 4. Lists anything still tagged with the run ID after the destroy, and deletes the log groups RDS creates on its own.
 
-Logs, the plan file and its JSON form go to `build/live/`, which git ignores. A run costs under USD 1 and takes about
-25 minutes: a VPN connection and a `db.t4g.medium` instance. It creates no NAT gateway.
+Logs, the plan file, its JSON form and the state go to `build/live/`, which git ignores. A run costs under USD 1 and
+takes about 25 minutes: a VPN connection and a `db.t4g.medium` instance. It creates no NAT gateway.
 
 ## Private-only
 
@@ -41,8 +44,8 @@ The live test cannot create anything reachable from the internet ([ADR 0005](adr
 
 ### Pre-flight
 
-Before `terraform test` creates anything, `scripts/test_live.sh` runs `terraform plan -out` in the live root with the
-same variables the test uses, writes `terraform show -json` of that plan to `build/live/plan-<run id>.json` and runs
+Before anything is created, `scripts/test_live.sh` runs `terraform plan -out` in the live root with the
+run's variables, writes `terraform show -json` of that plan to `build/live/plan-<run id>.json` and runs
 `python3 scripts/check_private_plan.py` on it. The script exits non-zero and lists every internet-facing resource it
 finds: internet or egress-only gateways, public NAT gateways, Elastic IPs, default routes through a gateway, load
 balancers without `internal = true`, security group ingress from `0.0.0.0/0` or `::/0`, ECS services with a public IP,
@@ -68,5 +71,6 @@ allows any principal without a condition. On any finding the live test stops bef
 
 ### Health checks
 
-The assertions in `infra/terraform/tests/live/live.tftest.hcl` read what the AWS APIs return to Terraform: the RDS
-endpoint and the VPN connection ID. No check sends a request over the internet to the deployed resources.
+The assertions in `scripts/test_live.sh` read what the AWS APIs return: the RDS endpoint and the VPN connection ID
+from the Terraform outputs, and `PubliclyAccessible` from `rds describe-db-instances`. No check sends a request over
+the internet to the deployed resources.
