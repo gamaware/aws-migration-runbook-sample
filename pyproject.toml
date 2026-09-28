@@ -9,6 +9,7 @@ dependencies = ["pyyaml==6.0.3"]
 dev = ["pytest==8.4.2"]
 
 [tool.uv]
+exclude-newer = "7 days"
 package = false
 
 [tool.pytest.ini_options]
