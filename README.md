@@ -79,8 +79,9 @@ make verify
 
 Expected output ends with `verify: all checks passed` after about a minute on a warm cache (the first run downloads
 the AWS provider and the TFLint ruleset). It runs ruff, the pytest suite, the plan rules (PLAN-01 to PLAN-10), the
-runbook rules (RUN-01 to RUN-16), `terraform fmt`, `validate` and the mocked `terraform test` runs in six roots,
-TFLint, Checkov, the evidence reproducibility check and the report checks.
+runbook rules (RUN-01 to RUN-16), `terraform fmt`, `validate` and the mocked `terraform test` runs in seven roots
+(one of them asserts that the live-test root is private-only), TFLint, Checkov, the evidence reproducibility check and
+the report checks.
 
 Optional targets:
 
@@ -88,11 +89,14 @@ Optional targets:
 | --- | --- | --- |
 | `make report` | Renders `report/REPORT.pdf` from `report/REPORT.md` with the pandoc/latex image CI uses | Docker |
 | `make sql-check` | Runs the validation queries on PostgreSQL 14 and 16 and proves V-05 catches a stale sequence | Docker |
-| `make test-live` | Manual. Applies a network and database slice to the sandbox account, asserts, destroys, then checks nothing tagged is left | AWS `dev` profile |
+| `make test-live` | Manual. Applies a private-only network and database slice to the sandbox account, asserts, destroys, then checks nothing tagged is left | AWS `dev` profile |
 
-`make test-live` shows the caller identity first, asks for confirmation, tags everything `purpose=portfolio-test`,
-lets `terraform test` destroy the resources and lists anything left behind. It costs under USD 1 per run. Its logs go
-to `build/live/`, which is never committed.
+`make test-live` shows the caller identity first, asks for confirmation, and refuses to run if
+`scripts/check_private_plan.py` finds anything internet-facing in the plan: the live test creates no internet gateway,
+NAT gateway, public load balancer or public ingress ([ADR 0005](docs/adr/0005-live-tests-run-private-only.md)). It
+tags everything `purpose=portfolio-test`, lets `terraform test` destroy the resources and lists anything left behind.
+It costs under USD 1 per run. Its logs go to `build/live/`, which is never committed. Details:
+[`docs/live-test.md`](docs/live-test.md).
 
 ## Repository map
 
@@ -103,7 +107,7 @@ migration/dms/         DMS table mappings and task settings, read by Terraform
 infra/terraform/
   modules/             network, app, database, dms, dns, each with tests/ using mock providers
   envs/production/     wave 1 root; reads plan/ and data/synthetic/
-  tests/               shared mocks and the live-test root
+  tests/               shared mocks, the live-test root and its offline private-only test
 runbooks/              cutover runbook, smoke tests, acceptance criteria, validation SQL, DNS change batches
 scripts/               plan, runbook, evidence and report checks (harbor/), report and live-test scripts
 tests/                 pytest: each rule passes on the repository and fails on a planted mistake
@@ -122,6 +126,7 @@ Architecture decision records follow the *Fundamentals of Software Architecture*
 | [0002](docs/adr/0002-dms-full-load-cdc-with-reverse-replication.md) | Move the data with AWS DMS full load plus CDC, and keep a reverse task for rollback | Accepted |
 | [0003](docs/adr/0003-route53-weighted-records-as-a-single-writer-switch.md) | Use Route 53 weighted records as a switch, never as a traffic split | Accepted |
 | [0004](docs/adr/0004-plan-files-as-the-single-source-of-truth.md) | Keep the plan in data files that Terraform, the checks and the runbook share | Accepted |
+| [0005](docs/adr/0005-live-tests-run-private-only.md) | Live tests run private-only | Accepted |
 
 ## Security and quality gates
 

@@ -24,7 +24,7 @@ portfolio repository.
 | `migration/dms/` | DMS table mappings and task settings (JSON), read by Terraform |
 | `infra/terraform/modules/` | network, app, database, dms, dns, each with mocked `tests/` |
 | `infra/terraform/envs/production/` | Wave 1 composition root |
-| `infra/terraform/tests/` | Shared mocks and the live-test root |
+| `infra/terraform/tests/` | Shared mocks, the live-test root and `live_private`, its offline private-only test |
 | `runbooks/` | Cutover runbook, smoke tests, acceptance criteria, validation SQL, DNS change batches |
 | `scripts/harbor/` | Plan, runbook, evidence and report rules; CLIs in `scripts/*.py` |
 | `tests/` | pytest suite: every rule passes on the repository and fails on a planted mistake |
