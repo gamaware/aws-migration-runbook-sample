@@ -70,6 +70,12 @@ def violations(plan: dict[str, Any]) -> list[str]:
     for address, rtype, after, unknown in _resources(plan):
         if rtype in FORBIDDEN_TYPES:
             found.append(f"{address}: {FORBIDDEN_TYPES[rtype]} is internet-facing")
+        elif rtype.startswith("aws_route53"):
+            found.append(f"{address}: Route 53 is not used in live tests")
+        elif rtype == "aws_eks_cluster" and any(
+            cfg.get("endpoint_public_access") is not False for cfg in after.get("vpc_config") or [{}]
+        ):
+            found.append(f"{address}: EKS API endpoint must set endpoint_public_access = false")
         elif rtype == "aws_nat_gateway" and after.get("connectivity_type", "public") != "private":
             found.append(f"{address}: public NAT gateway routes workloads to the internet")
         elif rtype in ("aws_lb", "aws_alb", "aws_elb") and after.get("internal") is not True:
