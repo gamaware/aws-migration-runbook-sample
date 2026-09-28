@@ -88,10 +88,17 @@ hosts, using the `/32` addresses specified in the plan.
 
 ![Wave 1 target architecture and cutover path](../docs/diagrams/wave-1-target.png)
 
-User traffic follows Route 53 weighted records to the selected destination. Using a TLS 1.3 policy, an Application
-Load Balancer directs each host name to its ECS Fargate service in private subnets. The RDS for PostgreSQL 16 database
-uses Multi-AZ and a customer managed KMS key for encryption; its data subnets have no internet route. From the
-application subnets, AWS DMS connects to the data center through the VPN and to RDS within the VPC.
+The application is internal, and the target keeps it that way (ADR 0006). Warehouse staff arrive from the corporate
+network over the Site-to-Site VPN and the storefront from its own VPC over a peering connection. Both names resolve from
+Route 53 weighted records in a private hosted zone; the corporate DNS servers forward them to a Resolver inbound
+endpoint, and the public zone keeps only the ACM validation records. Using a TLS 1.3 policy, an internal Application
+Load Balancer in the private application subnets directs each host name to its ECS Fargate service. Its security group
+admits only the corporate network, the storefront VPC and the VPC itself, and its access logs go to the central log
+archive bucket, because ALB access logging supports only SSE-S3. The tasks reach AWS APIs through VPC endpoints and send
+nothing to the internet except calls to the parcel carrier's published addresses, which leave through the NAT gateways
+the carrier allowlists. The RDS for PostgreSQL 16 database uses Multi-AZ and a customer managed KMS key for encryption;
+its data subnets have no internet route. From the application subnets, AWS DMS connects to the data center through the
+VPN, to RDS within the VPC and to Secrets Manager through its endpoint.
 
 Discovery p95 measurements determine sizing, with 25 percent headroom (E-04). Each inventory API task has 2 vCPU and 6 GB,
 and each web app task has 1 vCPU and 3 GB. The database uses a `db.r7g.2xlarge` instance and 400 GB of gp3 storage.
@@ -117,10 +124,11 @@ procedures:
 | Write freeze | T-0 to T+27m | R-02: restart the data center application; RDS is reloaded before the next attempt | 15 min |
 | Hypercare | T+27m to T+7d | R-03: maintenance page on AWS, drain the reverse task, flip DNS back | 25 min |
 
-For both DNS names, the switch sets Route 53 weights to 0/100 from 100/0. Because the database permits only one writer,
-the Terraform module rejects intermediate weights (ADR 0003). Three days before the switch, the TTL is reduced from
-3600 seconds to 60 seconds. Fixture-based execution on PostgreSQL 14 and 16 verified the validation queries
-(`make sql-check`).
+For both DNS names, the switch sets Route 53 weights to 0/100 from 100/0 in the private hosted zone. Because the
+database permits only one writer, the Terraform module rejects intermediate weights (ADR 0003). Three days before the
+switch, the TTL of the public records is reduced from 3600 seconds to 60 seconds; two days before, the corporate DNS
+servers start forwarding both names to the private zone and the public records are deleted. Fixture-based execution on
+PostgreSQL 14 and 16 verified the validation queries (`make sql-check`).
 
 ## Acceptance criteria
 
@@ -137,9 +145,9 @@ fulfillment orders and completion of a point-in-time restore within 60 minutes.
 | RISK-02 | High | `audit.request_log` has no primary key and a delete job | E-05 | Exclude from DMS; export the history and copy the tail in the freeze (M-05) |
 | RISK-03 | High | The parcel carrier allowlists the data center egress address | E-01 | Register the NAT gateway addresses before cutover (P-04) |
 | RISK-04 | Medium | JOB-01 and JOB-03 run inside the window against the database | E-07 | Disable at T-80m (C-06), final dump at C-07, re-enable batch after the switch |
-| RISK-05 | Medium | One-hour TTL on the public names | E-07 | Lower to 60 s at T-72h (C-01) |
+| RISK-05 | Medium | One-hour TTL on the public names | E-07 | Lower to 60 s at T-72h (C-01); delete them once corporate DNS forwards to the private zone (C-02) |
 | RISK-06 | Medium | PostgreSQL 14 to 16 during the move | E-04 | Full rehearsal on 16 (P-09); smoke tests before the switch |
-| RISK-07 | Low | No AWS WAF in front of the load balancer (none on premises either) | E-08 | Add managed rules in count mode during hypercare, then block |
+| RISK-07 | Low | No AWS WAF in front of the internal load balancer (none on premises either) | E-08 | Add managed rules in count mode during hypercare, then block |
 | RISK-08 | Low | The application database secret has no rotation | E-08 | Enable rotation once the API reloads credentials, after hypercare |
 | RISK-09 | Low | DMS endpoints use TLS without certificate verification | E-08 | Import the RDS and data center CAs and switch to `verify-full` |
 

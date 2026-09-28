@@ -6,29 +6,36 @@ Accepted
 
 ## Context
 
-Warehouse staff and the storefront reach `warehouse.example.com` and `api.example.com`, both served by the data center
-today with a one-hour TTL. The database has one writer. Sending some users to AWS and others to the data center at the
-same time would split writes across two databases.
+Warehouse staff on the corporate network and the storefront on AWS reach `warehouse.example.com` and
+`api.example.com`, both served by the data center today through public records with a one-hour TTL. The database has
+one writer. Sending some users to AWS and others to the data center at the same time would split writes across two
+databases. The target load balancer is internal (ADR 0006), so the names must resolve privately.
 
 ## Decision
 
-Each name becomes a weighted pair at T-48h: an `onprem` member pointing at the data center address and an `aws`
-member aliasing the load balancer. Weights are 100/0 or 0/100, nothing in between; the DNS module rejects any other
+Each name is a weighted pair in a Route 53 private hosted zone that Terraform creates with the target: an `onprem`
+member pointing at the data center address and an `aws` member aliasing the internal load balancer. The zone is
+associated with the wave 1 VPC and the storefront VPC, and the corporate DNS servers forward both names to a Resolver
+inbound endpoint over the VPN. At T-48h (C-02) the forwarders go live and the public records are deleted, so from then
+on every client resolves the pair. Weights are 100/0 or 0/100, nothing in between; the DNS module rejects any other
 combination. The alias does not evaluate target health, because with a 0/100 pair Route 53 would otherwise fail over
-to the zero-weight data center member on its own. The TTL drops to 60 seconds at T-72h, more than twice the old
-TTL before the switch.
+to the zero-weight data center member on its own. The public TTL drops to 60 seconds at T-72h, more than twice the old
+TTL before the switch, so no resolver keeps the public answer long after C-02 deletes it.
 
 ## Consequences
 
 - The switch (C-19) and the rollback change weights only; resolvers follow within about a minute.
 - No canary: the first user request on AWS is a real one. Smoke tests through `curl --resolve` (C-17) stand in
   for it.
-- Terraform updates the members one call at a time; the break-glass change batch flips all four in one call.
+- Terraform updates the members one call at a time; the break-glass change batch flips all four in one call. It
+  targets the private zone by the ID recorded in P-03, because a lookup by name would find the public zone.
+- The switch depends on the corporate forwarders and the storefront zone association, both proven at C-02.
 
 ## Compliance
 
-The DNS module's variable validation rejects split weights, and its tests assert 100/0 before and 0/100 after. RUN-11
-checks the TTL lead time and the change batches against the inventory.
+The DNS module's variable validation rejects split weights, and its tests assert 100/0 before and 0/100 after and
+that every member lives in the private zone. RUN-11 checks the TTL lead time, the public-record deletion batch and the
+break-glass batch against the inventory.
 
 ## Notes
 

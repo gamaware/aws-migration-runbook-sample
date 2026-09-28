@@ -62,11 +62,15 @@ hypercare, among them 99.9 percent synthetic check success, inventory API p95 at
 
 ![Harbor Goods migration: system context](docs/diagrams/system-context.png)
 
-Users reach the application through two public names. Today the data center serves them; after wave 1, ECS Fargate
-behind an Application Load Balancer serves them, with RDS for PostgreSQL 16 Multi-AZ as the database. AWS DMS copies
-the data over a Site-to-Site VPN, first forward and then, after cutover, in reverse to keep the rollback path open.
-The deployment view with the cutover path is [`docs/diagrams/wave-1-target.png`](docs/diagrams/wave-1-target.png);
-sources are the `.drawio` files next to it.
+Warehouse staff on the corporate network and the storefront on AWS reach the application through two names. Today the
+data center serves them; after wave 1, ECS Fargate behind an internal Application Load Balancer serves them, with RDS
+for PostgreSQL 16 Multi-AZ as the database. Nothing accepts connections from the internet: staff arrive over the VPN,
+the storefront over a VPC peering connection, and the names resolve from a Route 53 private hosted zone through a
+Resolver inbound endpoint. AWS API calls stay inside the VPC through VPC endpoints; only the parcel carrier's published
+addresses leave through NAT ([ADR 0006](docs/adr/0006-internal-load-balancer-private-dns-and-private-aws-apis.md)). AWS
+DMS copies the data over the VPN, first forward and then, after cutover, in reverse to keep the rollback path open. The
+deployment view with the cutover path is [`docs/diagrams/wave-1-target.png`](docs/diagrams/wave-1-target.png); sources
+are the `.drawio` files next to it.
 
 ## Verify locally
 
@@ -127,6 +131,7 @@ Architecture decision records follow the *Fundamentals of Software Architecture*
 | [0003](docs/adr/0003-route53-weighted-records-as-a-single-writer-switch.md) | Use Route 53 weighted records as a switch, never as a traffic split | Accepted |
 | [0004](docs/adr/0004-plan-files-as-the-single-source-of-truth.md) | Keep the plan in data files that Terraform, the checks and the runbook share | Accepted |
 | [0005](docs/adr/0005-live-tests-run-private-only.md) | Live tests run private-only | Accepted |
+| [0006](docs/adr/0006-internal-load-balancer-private-dns-and-private-aws-apis.md) | Serve wave 1 from an internal load balancer, private DNS and private AWS API access | Accepted |
 
 ## Security and quality gates
 
@@ -137,7 +142,7 @@ Architecture decision records follow the *Fundamentals of Software Architecture*
 - **Pre-commit** runs hygiene hooks, detect-secrets, gitleaks, markdownlint, ruff, `terraform fmt`, `validate`,
   TFLint, terraform-docs, Checkov, shellcheck, shellharden, actionlint, zizmor and conventional commits.
 - **Checkov** skips sit inside the resource with a reason; skips that defer work name a risk in the report
-  (RISK-07 to RISK-09), and a check fails if the report drops one.
+  (RISK-08 and RISK-09), and a check fails if the report drops one. Trivy runs without inline ignores.
 
 ## Limits and production adaptations
 

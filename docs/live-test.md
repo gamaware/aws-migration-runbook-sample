@@ -34,7 +34,8 @@ The live test cannot create anything reachable from the internet ([ADR 0005](adr
 - **Network.** The live root calls the network module with `internet_egress = false`. The VPC gets application and
   data subnets only: no internet gateway, public subnets, NAT gateways, Elastic IPs or default routes. The only route
   out of the VPC is the VPN route to the on-premises CIDR, learned from the virtual private gateway. The production
-  root keeps the default (`true`) because wave 1 needs the NAT egress addresses the parcel carrier allowlists.
+  root keeps the default (`true`) because wave 1 needs the NAT egress addresses the parcel carrier allowlists. The
+  live root passes `interface_endpoints = []`, so it gets the free S3 gateway endpoint and no interface endpoints.
 - **Load balancers and ECS.** The live root deploys no load balancer and no ECS service. A later change that adds
   them must set `internal = true` on the load balancer and `assign_public_ip = false` on the service; the pre-flight
   refuses anything else.

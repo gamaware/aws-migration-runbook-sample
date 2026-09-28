@@ -18,7 +18,8 @@ Live tests create nothing internet-facing. The network module gains `internet_eg
 sets it to `false`, which removes the internet gateway, public subnets, NAT gateways, Elastic IPs and default routes.
 The VPC keeps its application and data subnets, and its only way out is the VPN route to the on-premises CIDR. The
 production root keeps the default, because wave 1 needs the NAT egress addresses that the parcel carrier allowlists
-(prerequisite P-04).
+(prerequisite P-04). The live root also sets `interface_endpoints = []`: it runs no ECS service or DMS instance, so it
+keeps only the free S3 gateway endpoint (ADR 0006).
 
 Before any apply, `scripts/test_live.sh` plans the live root with the exact test variables, converts the plan with
 `terraform show -json` and runs `scripts/check_private_plan.py` on it. The run stops on any internet-facing resource: a
