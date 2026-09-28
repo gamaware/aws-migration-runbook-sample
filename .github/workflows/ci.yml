@@ -53,7 +53,7 @@ jobs:
   lint-docs:
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/lint-docs.yml@1255caafb08b06cc4658318c4dd48f9dea946c9e
+    uses: gamaware/.github/.github/workflows/lint-docs.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
     with:
       vale-paths: README.md CHANGELOG.md SECURITY.md docs report runbooks migration/dms/README.md data/synthetic/README.md
       lychee-args: >-
@@ -65,17 +65,17 @@ jobs:
   lint-actions:
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/lint-actions.yml@1255caafb08b06cc4658318c4dd48f9dea946c9e
+    uses: gamaware/.github/.github/workflows/lint-actions.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
 
   secrets:
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/secrets.yml@1255caafb08b06cc4658318c4dd48f9dea946c9e
+    uses: gamaware/.github/.github/workflows/secrets.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
 
   security:
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/security.yml@1255caafb08b06cc4658318c4dd48f9dea946c9e
+    uses: gamaware/.github/.github/workflows/security.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
     with:
       trivy-skip-dirs: infra/terraform/tests/live
       checkov-config: .checkov.yaml
@@ -83,7 +83,7 @@ jobs:
   terraform:
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/terraform.yml@1255caafb08b06cc4658318c4dd48f9dea946c9e
+    uses: gamaware/.github/.github/workflows/terraform.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
     with:
       terraform-version: "1.14.5"
       working-directories: >-
@@ -93,7 +93,7 @@ jobs:
   report:
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/report.yml@1255caafb08b06cc4658318c4dd48f9dea946c9e
+    uses: gamaware/.github/.github/workflows/report.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
     with:
       pandoc-args: --pdf-engine=xelatex -V geometry:margin=2cm --shift-heading-level-by=-1
       evidence-command: python -m pip install --quiet pyyaml==6.0.3 && python scripts/build_evidence.py
