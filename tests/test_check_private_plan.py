@@ -83,6 +83,17 @@ FOR_ALL_VALUES_OPTIONAL_READ = allow_anyone(
     }
 )
 OPEN_PULL = json.dumps({"Statement": {"Effect": "Allow", "Principal": {"AWS": ["*"]}, "Action": "ecr:BatchGetImage"}})
+OPEN_NOT_PRINCIPAL = json.dumps(
+    {
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "NotPrincipal": {"AWS": "arn:aws:iam::111122223333:root"},
+                "Action": "s3:GetObject",
+            }
+        ]
+    }
+)
 
 PRIVATE = plan(
     ("aws_lb", "app", {"internal": True, "load_balancer_type": "application"}, None),
@@ -220,6 +231,7 @@ class InternetFacing(unittest.TestCase):
             None,
         ),
         "public ECR policy": ("aws_ecr_repository_policy", {"policy": OPEN_PULL}, None),
+        "Allow with NotPrincipal": ("aws_s3_bucket_policy", {"policy": OPEN_NOT_PRINCIPAL}, None),
         "ECR Public repository": ("aws_ecrpublic_repository", {"repository_name": "x"}, None),
         "S3 website": ("aws_s3_bucket_website_configuration", {}, None),
         "weak public access block": ("aws_s3_bucket_public_access_block", {"block_public_policy": False}, None),
