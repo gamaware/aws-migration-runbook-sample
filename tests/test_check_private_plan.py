@@ -97,7 +97,17 @@ PRIVATE = plan(
     ("aws_s3_bucket_policy", "org", {"policy": ORG_READ}, None),
     ("aws_s3_bucket_policy", "org_paths", {"policy": ORG_PATHS_READ}, None),
     ("aws_route_table", "empty", {"route": []}, {"route": []}),
+    (
+        "aws_route_table",
+        "transit",
+        {"route": [{"cidr_block": "10.1.0.0/16"}]},
+        {"route": [{"transit_gateway_id": True}]},
+    ),
 )
+
+
+def open_to(principal):
+    return json.dumps({"Statement": [{"Effect": "Allow", "Principal": principal, "Action": "s3:*"}]})
 
 
 class PrivatePlan(unittest.TestCase):
@@ -164,6 +174,36 @@ class InternetFacing(unittest.TestCase):
         "ECS network unknown until apply": ("aws_ecs_service", {}, {"network_configuration": True}),
         "routes unknown until apply": ("aws_route_table", {}, {"route": True}),
         "route list unknown until apply": ("aws_route_table", {"route": []}, {"route": [{"gateway_id": True}]}),
+        "unknown route next to a known one": (
+            "aws_route_table",
+            {"route": [{"cidr_block": "10.1.0.0/16", "transit_gateway_id": "tgw-1"}]},
+            {"route": [{}, True]},
+        ),
+        "inline route with unknown destination to IGW": (
+            "aws_route_table",
+            {"route": [{"cidr_block": "10.1.0.0/16", "transit_gateway_id": "tgw-1"}, {"gateway_id": "igw-1"}]},
+            {"route": [{}, {"cidr_block": True}]},
+        ),
+        "inline default route to an unknown gateway next to a known one": (
+            "aws_route_table",
+            {"route": [{"cidr_block": "10.1.0.0/16", "transit_gateway_id": "tgw-1"}, {"cidr_block": "0.0.0.0/0"}]},
+            {"route": [{}, {"gateway_id": True}]},
+        ),
+        "route with unknown destination to NAT": (
+            "aws_route",
+            {"nat_gateway_id": "nat-1"},
+            {"destination_cidr_block": True},
+        ),
+        "wildcard Service principal": (
+            "aws_s3_bucket_policy",
+            {"policy": open_to({"Service": "*"})},
+            None,
+        ),
+        "wildcard Federated principal": (
+            "aws_s3_bucket_policy",
+            {"policy": open_to({"Federated": "*"})},
+            None,
+        ),
         "public ECR policy": ("aws_ecr_repository_policy", {"policy": OPEN_PULL}, None),
         "ECR Public repository": ("aws_ecrpublic_repository", {"repository_name": "x"}, None),
         "S3 website": ("aws_s3_bucket_website_configuration", {}, None),
@@ -178,6 +218,33 @@ class InternetFacing(unittest.TestCase):
                 found = check.violations(plan((rtype, "x", after, unknown)))
                 assert len(found) == 1, found
                 assert found[0].startswith(f"{rtype}.x: "), found
+
+
+class RouteTableConfig(unittest.TestCase):
+    """`route` is computed, so a table without inline routes plans as unknown; only inline routes are hidden."""
+
+    @staticmethod
+    def with_config(expressions, address="aws_route_table.data"):
+        doc = plan(("aws_route_table", "data", {}, {"route": True}))
+        doc["resource_changes"][0]["address"] = address
+        resource = {"address": "aws_route_table.data", "type": "aws_route_table", "expressions": expressions}
+        doc["configuration"] = {"root_module": {"module_calls": {"network": {"module": {"resources": [resource]}}}}}
+        return doc
+
+    def test_table_without_inline_routes_passes(self):
+        doc = self.with_config({"vpc_id": {}}, "module.network.aws_route_table.data")
+        self.assertEqual(check.violations(doc), [])
+
+    def test_table_with_inline_routes_unknown_is_refused(self):
+        doc = self.with_config({"route": {}}, "module.network.aws_route_table.data")
+        self.assertEqual(len(check.violations(doc)), 1)
+
+    def test_indexed_table_matches_its_config(self):
+        doc = self.with_config({"route": {}}, "module.network[0].aws_route_table.data[1]")
+        self.assertEqual(len(check.violations(doc)), 1)
+
+    def test_plan_without_configuration_stays_strict(self):
+        self.assertEqual(len(check.violations(plan(("aws_route_table", "data", {}, {"route": True})))), 1)
 
 
 class CommandLine(unittest.TestCase):
