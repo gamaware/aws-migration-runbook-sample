@@ -173,6 +173,7 @@ def _inline_route_tables(plan: dict[str, Any]) -> set[str] | None:
     """Config addresses (indexes removed) of route tables that declare inline `route` blocks.
 
     None when the plan has no configuration section, so every route table is treated as declaring routes.
+    Dynamic "route" blocks do not appear in these expressions; tests refuse them in this repo's Terraform.
     """
     config = plan.get("configuration")
     if not isinstance(config, dict) or not isinstance(config.get("root_module"), dict):

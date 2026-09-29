@@ -3,6 +3,7 @@
 import importlib.util
 import io
 import json
+import re
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -242,6 +243,17 @@ class RouteTableConfig(unittest.TestCase):
     def test_indexed_table_matches_its_config(self):
         doc = self.with_config({"route": {}}, "module.network[0].aws_route_table.data[1]")
         self.assertEqual(len(check.violations(doc)), 1)
+
+    def test_repo_terraform_has_no_dynamic_route_blocks(self):
+        # `terraform show -json` leaves dynamic blocks out of the configuration expressions, so a dynamic
+        # "route" would look like a table without inline routes and its unknown routes would be ignored.
+        root = Path(__file__).resolve().parents[1]
+        offenders = [
+            str(path.relative_to(root))
+            for path in root.rglob("*.tf")
+            if ".terraform" not in path.parts and re.search(r'dynamic\s+"route"', path.read_text(encoding="utf-8"))
+        ]
+        self.assertEqual(offenders, [], "use aws_route resources instead of dynamic route blocks")
 
     def test_plan_without_configuration_stays_strict(self):
         self.assertEqual(len(check.violations(plan(("aws_route_table", "data", {}, {"route": True})))), 1)
