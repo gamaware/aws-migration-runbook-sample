@@ -3,6 +3,7 @@
 import importlib.util
 import io
 import json
+import re
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -47,6 +48,38 @@ ACCOUNT_PULL = json.dumps(
     {"Statement": [{"Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::111122223333:root"}, "Action": "ecr:*"}]}
 )
 OPEN_READ = json.dumps({"Statement": [{"Effect": "Allow", "Principal": "*", "Action": "s3:GetObject"}]})
+
+
+def allow_anyone(condition):
+    """An Allow to any principal for s3:GetObject, limited only by the given Condition."""
+    statement = {"Effect": "Allow", "Principal": "*", "Action": "s3:GetObject", "Condition": condition}
+    return json.dumps({"Statement": [statement]})
+
+
+ORG_READ = allow_anyone({"StringEquals": {"aws:PrincipalOrgID": "o-exampleorgid"}})
+ORG_PATHS_READ = allow_anyone(
+    {
+        "ForAllValues:StringEquals": {"aws:PrincipalOrgPaths": ["o-exampleorgid/r-ab12/ou-ab12-11111111/"]},
+        "Null": {"aws:PrincipalOrgPaths": "false"},
+    }
+)
+TLS_ONLY_READ = allow_anyone({"Bool": {"aws:SecureTransport": "true"}})
+NOT_ACCOUNT_READ = allow_anyone({"StringNotEquals": {"aws:PrincipalAccount": "111122223333"}})
+ANONYMOUS_READ = allow_anyone({"StringEquals": {"aws:PrincipalAccount": "anonymous"}})
+ANONYMOUS_IN_LIST_READ = allow_anyone({"StringEquals": {"aws:PrincipalAccount": ["111122223333", "Anonymous"]}})
+SELF_MATCHING_ACCOUNT_READ = allow_anyone({"StringEquals": {"aws:PrincipalAccount": "${aws:PrincipalAccount}"}})
+WILDCARD_ACCOUNT_READ = allow_anyone({"StringLike": {"aws:PrincipalAccount": "*"}})
+WILDCARD_ARN_READ = allow_anyone({"ArnLike": {"aws:PrincipalArn": "arn:aws:iam::?????????????:*"}})
+EMPTY_VALUES_READ = allow_anyone({"StringEquals": {"aws:PrincipalOrgID": []}})
+BARE_FOR_ALL_VALUES_READ = allow_anyone(
+    {"ForAllValues:StringEquals": {"aws:PrincipalOrgPaths": ["o-exampleorgid/r-ab12/ou-ab12-11111111/"]}}
+)
+FOR_ALL_VALUES_OPTIONAL_READ = allow_anyone(
+    {
+        "ForAllValues:StringEquals": {"aws:PrincipalOrgPaths": ["o-exampleorgid/r-ab12/ou-ab12-11111111/"]},
+        "Null": {"aws:PrincipalOrgPaths": "true"},
+    }
+)
 OPEN_PULL = json.dumps({"Statement": {"Effect": "Allow", "Principal": {"AWS": ["*"]}, "Action": "ecr:BatchGetImage"}})
 
 PRIVATE = plan(
@@ -62,7 +95,20 @@ PRIVATE = plan(
     ("aws_s3_bucket_public_access_block", "b", dict.fromkeys(BLOCK_KEYS, True), None),
     ("aws_s3_bucket_policy", "tls", {"policy": DENY_INSECURE}, None),
     ("aws_ecr_repository_policy", "pull", {"policy": ACCOUNT_PULL}, None),
+    ("aws_s3_bucket_policy", "org", {"policy": ORG_READ}, None),
+    ("aws_s3_bucket_policy", "org_paths", {"policy": ORG_PATHS_READ}, None),
+    ("aws_route_table", "empty", {"route": []}, {"route": []}),
+    (
+        "aws_route_table",
+        "transit",
+        {"route": [{"cidr_block": "10.1.0.0/16"}]},
+        {"route": [{"transit_gateway_id": True}]},
+    ),
 )
+
+
+def open_to(principal):
+    return json.dumps({"Statement": [{"Effect": "Allow", "Principal": principal, "Action": "s3:*"}]})
 
 
 class PrivatePlan(unittest.TestCase):
@@ -107,6 +153,58 @@ class InternetFacing(unittest.TestCase):
         "Route 53 health check": ("aws_route53_health_check", {"type": "HTTPS"}, None),
         "public EKS endpoint": ("aws_eks_cluster", {"vpc_config": [{"endpoint_public_access": True}]}, None),
         "public S3 bucket policy": ("aws_s3_bucket_policy", {"policy": OPEN_READ}, None),
+        "public policy with a transport condition": ("aws_s3_bucket_policy", {"policy": TLS_ONLY_READ}, None),
+        "public policy with a negated condition": ("aws_s3_bucket_policy", {"policy": NOT_ACCOUNT_READ}, None),
+        "public policy for anonymous callers": ("aws_s3_bucket_policy", {"policy": ANONYMOUS_READ}, None),
+        "public policy listing anonymous": ("aws_s3_bucket_policy", {"policy": ANONYMOUS_IN_LIST_READ}, None),
+        "public policy with a policy variable": ("aws_s3_bucket_policy", {"policy": SELF_MATCHING_ACCOUNT_READ}, None),
+        "public policy with a wildcard account": ("aws_s3_bucket_policy", {"policy": WILDCARD_ACCOUNT_READ}, None),
+        "public policy with a wildcard ARN": ("aws_s3_bucket_policy", {"policy": WILDCARD_ARN_READ}, None),
+        "public policy with no condition values": ("aws_s3_bucket_policy", {"policy": EMPTY_VALUES_READ}, None),
+        "public policy with bare ForAllValues": ("aws_s3_bucket_policy", {"policy": BARE_FOR_ALL_VALUES_READ}, None),
+        "public policy with optional ForAllValues key": (
+            "aws_s3_bucket_policy",
+            {"policy": FOR_ALL_VALUES_OPTIONAL_READ},
+            None,
+        ),
+        "ECS public IP unknown until apply": (
+            "aws_ecs_service",
+            {"network_configuration": [{"subnets": ["subnet-1"]}]},
+            {"network_configuration": [{"assign_public_ip": True}]},
+        ),
+        "ECS network unknown until apply": ("aws_ecs_service", {}, {"network_configuration": True}),
+        "routes unknown until apply": ("aws_route_table", {}, {"route": True}),
+        "route list unknown until apply": ("aws_route_table", {"route": []}, {"route": [{"gateway_id": True}]}),
+        "unknown route next to a known one": (
+            "aws_route_table",
+            {"route": [{"cidr_block": "10.1.0.0/16", "transit_gateway_id": "tgw-1"}]},
+            {"route": [{}, True]},
+        ),
+        "inline route with unknown destination to IGW": (
+            "aws_route_table",
+            {"route": [{"cidr_block": "10.1.0.0/16", "transit_gateway_id": "tgw-1"}, {"gateway_id": "igw-1"}]},
+            {"route": [{}, {"cidr_block": True}]},
+        ),
+        "inline default route to an unknown gateway next to a known one": (
+            "aws_route_table",
+            {"route": [{"cidr_block": "10.1.0.0/16", "transit_gateway_id": "tgw-1"}, {"cidr_block": "0.0.0.0/0"}]},
+            {"route": [{}, {"gateway_id": True}]},
+        ),
+        "route with unknown destination to NAT": (
+            "aws_route",
+            {"nat_gateway_id": "nat-1"},
+            {"destination_cidr_block": True},
+        ),
+        "wildcard Service principal": (
+            "aws_s3_bucket_policy",
+            {"policy": open_to({"Service": "*"})},
+            None,
+        ),
+        "wildcard Federated principal": (
+            "aws_s3_bucket_policy",
+            {"policy": open_to({"Federated": "*"})},
+            None,
+        ),
         "public ECR policy": ("aws_ecr_repository_policy", {"policy": OPEN_PULL}, None),
         "ECR Public repository": ("aws_ecrpublic_repository", {"repository_name": "x"}, None),
         "S3 website": ("aws_s3_bucket_website_configuration", {}, None),
@@ -121,6 +219,44 @@ class InternetFacing(unittest.TestCase):
                 found = check.violations(plan((rtype, "x", after, unknown)))
                 assert len(found) == 1, found
                 assert found[0].startswith(f"{rtype}.x: "), found
+
+
+class RouteTableConfig(unittest.TestCase):
+    """`route` is computed, so a table without inline routes plans as unknown; only inline routes are hidden."""
+
+    @staticmethod
+    def with_config(expressions, address="aws_route_table.data"):
+        doc = plan(("aws_route_table", "data", {}, {"route": True}))
+        doc["resource_changes"][0]["address"] = address
+        resource = {"address": "aws_route_table.data", "type": "aws_route_table", "expressions": expressions}
+        doc["configuration"] = {"root_module": {"module_calls": {"network": {"module": {"resources": [resource]}}}}}
+        return doc
+
+    def test_table_without_inline_routes_passes(self):
+        doc = self.with_config({"vpc_id": {}}, "module.network.aws_route_table.data")
+        self.assertEqual(check.violations(doc), [])
+
+    def test_table_with_inline_routes_unknown_is_refused(self):
+        doc = self.with_config({"route": {}}, "module.network.aws_route_table.data")
+        self.assertEqual(len(check.violations(doc)), 1)
+
+    def test_indexed_table_matches_its_config(self):
+        doc = self.with_config({"route": {}}, "module.network[0].aws_route_table.data[1]")
+        self.assertEqual(len(check.violations(doc)), 1)
+
+    def test_repo_terraform_has_no_dynamic_route_blocks(self):
+        # `terraform show -json` leaves dynamic blocks out of the configuration expressions, so a dynamic
+        # "route" would look like a table without inline routes and its unknown routes would be ignored.
+        root = Path(__file__).resolve().parents[1]
+        offenders = [
+            str(path.relative_to(root))
+            for path in root.rglob("*.tf")
+            if ".terraform" not in path.parts and re.search(r'dynamic\s+"route"', path.read_text(encoding="utf-8"))
+        ]
+        self.assertEqual(offenders, [], "use aws_route resources instead of dynamic route blocks")
+
+    def test_plan_without_configuration_stays_strict(self):
+        self.assertEqual(len(check.violations(plan(("aws_route_table", "data", {}, {"route": True})))), 1)
 
 
 class CommandLine(unittest.TestCase):

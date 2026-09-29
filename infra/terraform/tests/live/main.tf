@@ -67,6 +67,8 @@ module "network" {
 }
 
 module "database" {
+  #checkov:skip=CKV_AWS_293:Throwaway live-test instance; scripts/test_live.sh destroys it at the end of every run.
+  #checkov:skip=CKV_AWS_157:Single-AZ keeps the live test under USD 1; production sets multi_az from plan/target.yaml.
   source = "../../modules/database"
 
   name                      = "hg-live-${var.run_id}"

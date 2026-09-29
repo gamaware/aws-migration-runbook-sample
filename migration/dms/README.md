@@ -20,7 +20,9 @@ Choices worth knowing:
   go/no-go validation queries rely on.
 - `ValidationSettings.EnableValidation: true` on the forward task only. Validation reads both databases; on the reverse
   task it would add load to the on-premises server that serves as the rollback target.
-- Errors are logged and suspend the table instead of being ignored. Go/no-go criterion G-03 requires zero rows in
-  `dms_control.awsdms_apply_exceptions` and zero suspended tables.
+- Both tasks fail closed: a data, truncation or apply error on a row suspends its table (DMS still records the row in
+  `dms_control.awsdms_apply_exceptions`), and a table or apply error escalation stops the task. PLAN-10 rejects
+  `LOG_ERROR` and `IGNORE_RECORD`, and requires `STOP_TASK` for both escalations. Go/no-go criterion G-03 requires zero
+  exception rows and zero suspended tables.
 
 DMS does not copy sequences, roles or grants for PostgreSQL. The runbook covers them with manual steps M-01 to M-04.

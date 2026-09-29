@@ -3,13 +3,8 @@ variable "name" {
   type        = string
 }
 
-variable "zone_name" {
-  description = "Name of the private hosted zone that holds the records (example.com)."
-  type        = string
-}
-
 variable "vpc_id" {
-  description = "VPC that hosts the internal load balancer and the Resolver inbound endpoint; the private zone is associated with it."
+  description = "VPC that hosts the internal load balancer and the Resolver inbound endpoint; the private zones are associated with it."
   type        = string
 }
 
@@ -40,7 +35,7 @@ variable "resolver_client_cidrs" {
 }
 
 variable "records" {
-  description = "Records to switch, keyed by fully qualified name, with the on-premises address they point to today."
+  description = "Records to switch, keyed by fully qualified name, with the on-premises address they point to today. Each name gets its own private hosted zone."
   type = map(object({
     onprem_ip = string
   }))

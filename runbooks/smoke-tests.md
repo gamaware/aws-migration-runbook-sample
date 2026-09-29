@@ -5,7 +5,7 @@ internal, so it answers only over the VPN. `curl --resolve` sends each request t
 name, so TLS and host routing are tested as users will see them:
 
 ```bash
-ALB_IP="$(dig +short "$(terraform output -raw alb_dns_name)" | head -1)"
+ALB_IP="$(dig +short "$(terraform -chdir=infra/terraform/envs/production output -raw alb_dns_name)" | head -1)"
 curl -sS --resolve "warehouse.example.com:443:$ALB_IP" https://warehouse.example.com/healthz
 ```
 

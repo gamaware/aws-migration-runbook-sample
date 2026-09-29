@@ -1,5 +1,5 @@
 {
-  "Comment": "C-02: delete the public simple records once the corporate resolvers forward both names to the private hosted zone",
+  "Comment": "C-02: delete the public simple records once the corporate resolvers forward both names to the private hosted zones",
   "Changes": [
     {
       "Action": "DELETE",

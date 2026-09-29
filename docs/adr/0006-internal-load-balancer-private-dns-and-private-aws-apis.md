@@ -29,8 +29,10 @@ Constraints that shaped the options:
   `plan/target.yaml`: the corporate network (10.40.0.0/16, over the VPN), the storefront VPC (10.50.0.0/16, over a
   VPC peering connection) and the VPC itself (10.60.0.0/16, for the web tasks that call `api.example.com`). The
   variable has no default and rejects any range outside RFC 1918.
-- **Private DNS.** The weighted pairs of ADR 0003 live in a Route 53 private hosted zone for `example.com`,
-  associated with the wave 1 VPC and the storefront VPC. A Resolver inbound endpoint in the application subnets
+- **Private DNS.** The weighted pairs of ADR 0003 live in Route 53 private hosted zones, one per name
+  (`warehouse.example.com` and `api.example.com`), associated with the wave 1 VPC and the storefront VPC. A single
+  private zone for `example.com` would shadow the whole public domain in both VPCs, so the storefront would stop
+  resolving its own public names and `sftp.example.com`. A Resolver inbound endpoint in the application subnets
   answers DNS on port 53 to the corporate network only; the corporate DNS servers forward the two wave 1 names to it
   (runbook step C-02), after which the old public records are deleted. The public zone keeps only the ACM DNS
   validation CNAMEs: they prove control of the names to the certificate authority and point at no endpoint, so the
@@ -64,13 +66,13 @@ Constraints that shaped the options:
 
 ## Compliance
 
-The app module tests assert an internal load balancer in the subnets it is given, no ingress or egress to `0.0.0.0/0`
-or `::/0`, HTTPS egress only to the VPC, the S3 prefix list and the carrier addresses, and access logs sent to the
-log archive; they also show the variables rejecting public client ranges and wide carrier ranges. The dns module tests
-assert that every weighted member lives in the private zone and that the Resolver endpoint admits only the corporate
-network. The network and dms tests cover the endpoints and the DMS egress. The production test asserts the composed
-values from `plan/target.yaml`. RUN-11 requires the public records to be deleted, not converted. Trivy runs in CI with
-HIGH and CRITICAL findings failing the build and no inline ignores.
+The app module tests assert an internal load balancer in the subnets it is given, no ingress or egress to `0.0.0.0/0` or
+`::/0`, HTTPS egress only to the VPC, the S3 prefix list and the carrier addresses, and access logs sent to the log
+archive; they also show the variables rejecting public client ranges and wide carrier ranges. The dns module tests
+assert that every weighted member lives at the apex of its own private zone, that no zone covers the parent domain, and
+that the Resolver endpoint admits only the corporate network. The network and dms tests cover the endpoints and the DMS
+egress. The production test asserts the composed values from `plan/target.yaml`. RUN-11 requires the public records to
+be deleted, not converted. Trivy runs in CI with HIGH and CRITICAL findings failing the build and no inline ignores.
 
 ## Notes
 

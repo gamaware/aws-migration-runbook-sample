@@ -4,7 +4,7 @@ This repository is a sample migration deliverable for a fictional company, Harbo
 requests:
 
 - Flag any real account ID, ARN, public IP, email or company name. Allowed: `123456789012`, `111122223333`,
-  `444455556666`, `example.com`, `203.0.113.0/24` and RFC 1918 ranges.
+  `444455556666`, `777788889999`, `example.com`, `203.0.113.0/24` and RFC 1918 ranges.
 - The plan files in `plan/` and the inventory in `data/synthetic/` feed Terraform and the runbook. A change in one
   usually needs a change in the others; `make verify` proves they agree.
 - Runbook steps need an ID, a T-offset, an owner and a rollback reference.

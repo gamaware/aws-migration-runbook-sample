@@ -3,7 +3,5 @@ directory:
   - infra/terraform
 framework:
   - terraform
-skip-path:
-  - tests/live
 quiet: true
 compact: true

@@ -77,7 +77,6 @@ jobs:
       contents: read
     uses: gamaware/.github/.github/workflows/security.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
     with:
-      trivy-skip-dirs: infra/terraform/tests/live
       checkov-config: .checkov.yaml
 
   terraform:
