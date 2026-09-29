@@ -60,6 +60,8 @@ hypercare, among them 99.9 percent synthetic check success, inventory API p95 at
 
 ## Architecture
 
+![Animated flow: wave 1 moves the warehouse app from the data center to AWS](docs/diagrams/architecture-animated.svg)
+
 ![Harbor Goods migration: system context](docs/diagrams/system-context.png)
 
 Warehouse staff on the corporate network and the storefront on AWS reach the application through two names. Today the
