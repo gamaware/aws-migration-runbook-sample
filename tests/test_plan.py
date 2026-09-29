@@ -104,6 +104,34 @@ def test_duplicate_classification_is_a_load_error(sandbox) -> None:
             "PLAN-10",
             id="reverse-task-logs-and-skips-a-failed-insert",
         ),
+        pytest.param(
+            "migration/dms/task-settings-forward.json",
+            '"ApplyErrorEscalationPolicy": "STOP_TASK"',
+            '"ApplyErrorEscalationPolicy": "SUSPEND_TABLE"',
+            "PLAN-10",
+            id="apply-escalation-keeps-the-task-running",
+        ),
+        pytest.param(
+            "migration/dms/task-settings-reverse.json",
+            '"TableErrorEscalationPolicy": "STOP_TASK"',
+            '"TableErrorEscalationPolicy": "SUSPEND_TABLE"',
+            "PLAN-10",
+            id="table-escalation-keeps-the-task-running",
+        ),
+        pytest.param(
+            "migration/dms/task-settings-forward.json",
+            '"DataErrorEscalationPolicy": "SUSPEND_TABLE"',
+            '"DataErrorEscalationPolicy": "LOG_ERROR"',
+            "PLAN-10",
+            id="data-escalation-logs-and-continues",
+        ),
+        pytest.param(
+            "migration/dms/task-settings-reverse.json",
+            '"TableErrorPolicy": "SUSPEND_TABLE"',
+            '"TableErrorPolicy": "LOG_ERROR"',
+            "PLAN-10",
+            id="table-error-logs-and-continues",
+        ),
     ],
 )
 def test_rule_catches_its_mistake(sandbox, relative: str, old: str, new: str, rule: str) -> None:

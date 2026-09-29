@@ -126,13 +126,15 @@ dig +short api.example.com
 curl -sS -o /dev/null -w '%{http_code}\n' https://warehouse.example.com/healthz
 ```
 
-Break-glass path, if Terraform is unavailable: render `runbooks/dns/switch-<name>.json.tpl` for the target side
-and send one change batch per zone, which flips both members of that name at once. The two calls land seconds
-apart; both sides are frozen or in maintenance at that point, so no write reaches the wrong database. Reconcile
-Terraform right after: set the matching `traffic_weights` line in `production.tfvars` and apply it.
+Break-glass path, if Terraform is unavailable, from the repository root (the template paths are relative to it):
+render `runbooks/dns/switch-<name>.json.tpl` for the target side and send one change batch per zone, which flips both
+members of that name at once. The two calls land seconds apart; both sides are frozen or in maintenance at that point,
+so no write reaches the wrong database. Reconcile Terraform right after: set the matching `traffic_weights` line in
+`infra/terraform/envs/production/production.tfvars` and apply it.
 
 ```bash
 set -u
+cd "$(git rev-parse --show-toplevel)"   # the primary path left the shell in infra/terraform/envs/production
 # ALB_DNS_NAME, ALB_ZONE_ID and the private zone IDs come from the change record (P-03), not from Terraform. A
 # lookup by name could find a public zone with the same name.
 export ALB_DNS_NAME="<from the change record>" ALB_ZONE_ID="<from the change record>"

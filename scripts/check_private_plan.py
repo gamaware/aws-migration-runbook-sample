@@ -145,10 +145,14 @@ def _is_false(value: Any) -> bool:
 
 
 def _concrete(value: Any) -> bool:
-    """A non-empty list of literal values, none a wildcard pattern and none "anonymous"."""
+    """A non-empty list of literal values: no wildcard pattern, no "anonymous" and no policy variable.
+
+    A policy variable such as ${aws:PrincipalAccount} resolves to the caller's own value, so it matches every caller.
+    """
     values = _as_list(value)
     return bool(values) and all(
-        isinstance(v, str) and v and "*" not in v and "?" not in v and v.lower() != "anonymous" for v in values
+        isinstance(v, str) and v and "*" not in v and "?" not in v and "${" not in v and v.lower() != "anonymous"
+        for v in values
     )
 
 

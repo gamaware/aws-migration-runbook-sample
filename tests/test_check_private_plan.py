@@ -66,6 +66,7 @@ TLS_ONLY_READ = allow_anyone({"Bool": {"aws:SecureTransport": "true"}})
 NOT_ACCOUNT_READ = allow_anyone({"StringNotEquals": {"aws:PrincipalAccount": "111122223333"}})
 ANONYMOUS_READ = allow_anyone({"StringEquals": {"aws:PrincipalAccount": "anonymous"}})
 ANONYMOUS_IN_LIST_READ = allow_anyone({"StringEquals": {"aws:PrincipalAccount": ["111122223333", "Anonymous"]}})
+SELF_MATCHING_ACCOUNT_READ = allow_anyone({"StringEquals": {"aws:PrincipalAccount": "${aws:PrincipalAccount}"}})
 WILDCARD_ACCOUNT_READ = allow_anyone({"StringLike": {"aws:PrincipalAccount": "*"}})
 WILDCARD_ARN_READ = allow_anyone({"ArnLike": {"aws:PrincipalArn": "arn:aws:iam::?????????????:*"}})
 EMPTY_VALUES_READ = allow_anyone({"StringEquals": {"aws:PrincipalOrgID": []}})
@@ -145,6 +146,7 @@ class InternetFacing(unittest.TestCase):
         "public policy with a negated condition": ("aws_s3_bucket_policy", {"policy": NOT_ACCOUNT_READ}, None),
         "public policy for anonymous callers": ("aws_s3_bucket_policy", {"policy": ANONYMOUS_READ}, None),
         "public policy listing anonymous": ("aws_s3_bucket_policy", {"policy": ANONYMOUS_IN_LIST_READ}, None),
+        "public policy with a policy variable": ("aws_s3_bucket_policy", {"policy": SELF_MATCHING_ACCOUNT_READ}, None),
         "public policy with a wildcard account": ("aws_s3_bucket_policy", {"policy": WILDCARD_ACCOUNT_READ}, None),
         "public policy with a wildcard ARN": ("aws_s3_bucket_policy", {"policy": WILDCARD_ARN_READ}, None),
         "public policy with no condition values": ("aws_s3_bucket_policy", {"policy": EMPTY_VALUES_READ}, None),
