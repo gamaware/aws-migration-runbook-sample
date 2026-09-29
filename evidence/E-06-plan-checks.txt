@@ -7,5 +7,5 @@ PASS PLAN-06 public names follow their servers: switched when they move, removed
 PASS PLAN-07 ECS task sizes cover each source server's p95 use with 25 percent headroom
 PASS PLAN-08 RDS covers the source CPU, memory, storage and version
 PASS PLAN-09 DMS selects every schema and excludes exactly the tables without a primary key
-PASS PLAN-10 DMS tasks: full load plus CDC forward, CDC only back, validation on, LOBs fit
+PASS PLAN-10 DMS tasks: full load plus CDC forward, CDC only back, validation on, LOBs fit, errors suspend the table, escalations stop the task
 10 of 10 rules pass

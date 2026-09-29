@@ -90,15 +90,16 @@ hosts, using the `/32` addresses specified in the plan.
 
 The application is internal, and the target keeps it that way (ADR 0006). Warehouse staff arrive from the corporate
 network over the Site-to-Site VPN and the storefront from its own VPC over a peering connection. Both names resolve from
-Route 53 weighted records in a private hosted zone; the corporate DNS servers forward them to a Resolver inbound
-endpoint, and the public zone keeps only the ACM validation records. Using a TLS 1.3 policy, an internal Application
-Load Balancer in the private application subnets directs each host name to its ECS Fargate service. Its security group
-admits only the corporate network, the storefront VPC and the VPC itself, and its access logs go to the central log
-archive bucket, because ALB access logging supports only SSE-S3. The tasks reach AWS APIs through VPC endpoints and send
-nothing to the internet except calls to the parcel carrier's published addresses, which leave through the NAT gateways
-the carrier allowlists. The RDS for PostgreSQL 16 database uses Multi-AZ and a customer managed KMS key for encryption;
-its data subnets have no internet route. From the application subnets, AWS DMS connects to the data center through the
-VPN, to RDS within the VPC and to Secrets Manager through its endpoint.
+Route 53 weighted records, each name in its own private hosted zone so the rest of `example.com` still resolves
+publicly; the corporate DNS servers forward them to a Resolver inbound endpoint, and the public zone keeps only the ACM
+validation records. Using a TLS 1.3 policy, an internal Application Load Balancer in the private application subnets
+directs each host name to its ECS Fargate service. Its security group admits only the corporate network, the storefront
+VPC and the VPC itself, and its access logs go to the central log archive bucket, because ALB access logging supports
+only SSE-S3. The tasks reach AWS APIs through VPC endpoints and send nothing to the internet except calls to the parcel
+carrier's published addresses, which leave through the NAT gateways the carrier allowlists. The RDS for PostgreSQL 16
+database uses Multi-AZ and a customer managed KMS key for encryption; its data subnets have no internet route. From the
+application subnets, AWS DMS connects to the data center through the VPN, to RDS within the VPC and to Secrets Manager
+through its endpoint.
 
 Discovery p95 measurements determine sizing, with 25 percent headroom (E-04). Each inventory API task has 2 vCPU and 6 GB,
 and each web app task has 1 vCPU and 3 GB. The database uses a `db.r7g.2xlarge` instance and 400 GB of gp3 storage.
@@ -124,10 +125,10 @@ procedures:
 | Write freeze | T-0 to T+27m | R-02: restart the data center application; RDS is reloaded before the next attempt | 15 min |
 | Hypercare | T+27m to T+7d | R-03: maintenance page on AWS, drain the reverse task, flip DNS back | 25 min |
 
-For both DNS names, the switch sets Route 53 weights to 0/100 from 100/0 in the private hosted zone. Because the
+For both DNS names, the switch sets Route 53 weights to 0/100 from 100/0 in the private hosted zones. Because the
 database permits only one writer, the Terraform module rejects intermediate weights (ADR 0003). Three days before the
 switch, the TTL of the public records is reduced from 3600 seconds to 60 seconds; two days before, the corporate DNS
-servers start forwarding both names to the private zone and the public records are deleted. Fixture-based execution on
+servers start forwarding both names to the private zones and the public records are deleted. Fixture-based execution on
 PostgreSQL 14 and 16 verified the validation queries (`make sql-check`).
 
 ## Acceptance criteria

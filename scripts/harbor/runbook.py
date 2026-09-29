@@ -336,8 +336,8 @@ def dns_switch_is_prepared(rb: Runbook, m: Migration) -> Result:
             r.fail(f"{ttl_step['ID']} does not lower the TTL of {name}")
         if name not in rb.sections["DNS switch"].text and name not in switch["Action"]:
             r.fail(f"the DNS switch does not mention {name}")
-    # The weighted pairs live in the private hosted zone that Terraform creates (ADR 0006). The public zone only loses
-    # the old simple records, once the corporate resolvers forward the names to the private zone.
+    # The weighted pairs live in the private hosted zones that Terraform creates (ADR 0006). The public zone only
+    # loses the old simple records, once the corporate resolvers forward the names to the private zones.
     batch_path = m.root / "runbooks" / "dns" / "remove-public-records.json"
     changes = json.loads(batch_path.read_text(encoding="utf-8"))["Changes"] if batch_path.is_file() else []
     for name in names:
@@ -348,14 +348,60 @@ def dns_switch_is_prepared(rb: Runbook, m: Migration) -> Result:
         elif deletes[0]["ResourceRecordSet"]["ResourceRecords"] != [{"Value": value}]:
             r.fail(f"remove-public-records.json deletes {name} with a value other than {value}")
     if any(c["Action"] != "DELETE" for c in changes):
-        r.fail("remove-public-records.json may only delete; the weighted pairs belong in the private hosted zone")
-    template = (m.root / "runbooks" / "dns" / "change-batch.json.tpl").read_text(encoding="utf-8")
+        r.fail("remove-public-records.json may only delete; the weighted pairs belong in the private hosted zones")
+    # Each name has its own private zone (ADR 0006), so the break-glass path sends one change batch per zone.
     for name in names:
-        if template.count(f'"Name": "{name}"') != 2:
-            r.fail(f"change-batch.json.tpl must flip both members of {name}")
+        template_path = m.root / "runbooks" / "dns" / f"switch-{name}.json.tpl"
+        if not template_path.is_file():
+            r.fail(f"{template_path.name} is missing; the break-glass path needs one batch per private zone")
+            continue
+        problem = _switch_template_problem(template_path.read_text(encoding="utf-8"), name)
+        if problem:
+            r.fail(f"{template_path.name}: {problem}")
     if "traffic_weights" not in switch["Action"]:
         r.fail(f"{switch['ID']} must change traffic_weights, the only input of the DNS module that moves traffic")
     return r
+
+
+# Distinct test weights, so a template that swaps the two variables or hard-codes a weight is caught.
+_TEMPLATE_VALUES = {
+    "ONPREM_WEIGHT": "17",
+    "AWS_WEIGHT": "83",
+    "ALB_ZONE_ID": "Z000000000000EXAMPLE",
+    "ALB_DNS_NAME": "internal-alb.example.com",
+}
+
+
+def _switch_template_problem(template: str, name: str) -> str | None:
+    """Why a break-glass change batch does not flip both weighted members of `name`, or None when it does."""
+    rendered = template
+    for var, value in _TEMPLATE_VALUES.items():
+        rendered = rendered.replace("${" + var + "}", value)
+    try:
+        changes = json.loads(rendered)["Changes"]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        return f"not a Route 53 change batch after substitution ({exc})"
+    if not isinstance(changes, list):
+        return "Changes must be a list"
+    expected = {"onprem": int(_TEMPLATE_VALUES["ONPREM_WEIGHT"]), "aws": int(_TEMPLATE_VALUES["AWS_WEIGHT"])}
+    seen: dict[str, int] = {}
+    for change in changes:
+        if not isinstance(change, dict) or not isinstance(change.get("ResourceRecordSet"), dict):
+            return "every change needs a ResourceRecordSet"
+        record = change["ResourceRecordSet"]
+        if change.get("Action") != "UPSERT" or record.get("Name") != name:
+            return f"every change must UPSERT {name} and touch no other name"
+        ident = record.get("SetIdentifier")
+        if ident not in expected or ident in seen:
+            return f"needs exactly one onprem and one aws member of {name}, found SetIdentifier {ident!r}"
+        seen[ident] = record.get("Weight")
+    if set(seen) != set(expected):
+        return f"must flip both members of {name}; found {sorted(seen)}"
+    for ident, weight in expected.items():
+        if seen[ident] != weight:
+            var = "ONPREM_WEIGHT" if ident == "onprem" else "AWS_WEIGHT"
+            return f"the {ident} member must take its weight from ${{{var}}}"
+    return None
 
 
 def validation_queries_exist(rb: Runbook, m: Migration) -> Result:

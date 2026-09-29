@@ -69,7 +69,7 @@ repos:
     rev: 8c0ddf99eabe4db75c739320274c7764866cd03d  # frozen: 3.3.19
     hooks:
       - id: checkov
-        args: [--quiet, --compact, --framework, terraform, --skip-path, tests/live]
+        args: [--quiet, --compact, --framework, terraform]
 
   - repo: local
     hooks:

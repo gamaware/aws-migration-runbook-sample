@@ -65,7 +65,7 @@ hypercare, among them 99.9 percent synthetic check success, inventory API p95 at
 Warehouse staff on the corporate network and the storefront on AWS reach the application through two names. Today the
 data center serves them; after wave 1, ECS Fargate behind an internal Application Load Balancer serves them, with RDS
 for PostgreSQL 16 Multi-AZ as the database. Nothing accepts connections from the internet: staff arrive over the VPN,
-the storefront over a VPC peering connection, and the names resolve from a Route 53 private hosted zone through a
+the storefront over a VPC peering connection, and each name resolves from its own Route 53 private hosted zone through a
 Resolver inbound endpoint. AWS API calls stay inside the VPC through VPC endpoints; only the parcel carrier's published
 addresses leave through NAT ([ADR 0006](docs/adr/0006-internal-load-balancer-private-dns-and-private-aws-apis.md)). AWS
 DMS copies the data over the VPN, first forward and then, after cutover, in reverse to keep the rollback path open. The

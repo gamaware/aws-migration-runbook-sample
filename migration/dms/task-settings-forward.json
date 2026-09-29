@@ -58,8 +58,8 @@
     "HandleSourceTableAltered": true
   },
   "ErrorBehavior": {
-    "DataErrorPolicy": "LOG_ERROR",
-    "DataTruncationErrorPolicy": "LOG_ERROR",
+    "DataErrorPolicy": "SUSPEND_TABLE",
+    "DataTruncationErrorPolicy": "SUSPEND_TABLE",
     "DataErrorEscalationPolicy": "SUSPEND_TABLE",
     "DataErrorEscalationCount": 0,
     "TableErrorPolicy": "SUSPEND_TABLE",
@@ -69,10 +69,10 @@
     "RecoverableErrorInterval": 5,
     "RecoverableErrorThrottling": true,
     "RecoverableErrorThrottlingMax": 1800,
-    "ApplyErrorDeletePolicy": "LOG_ERROR",
-    "ApplyErrorInsertPolicy": "LOG_ERROR",
-    "ApplyErrorUpdatePolicy": "LOG_ERROR",
-    "ApplyErrorEscalationPolicy": "LOG_ERROR",
+    "ApplyErrorDeletePolicy": "SUSPEND_TABLE",
+    "ApplyErrorInsertPolicy": "SUSPEND_TABLE",
+    "ApplyErrorUpdatePolicy": "SUSPEND_TABLE",
+    "ApplyErrorEscalationPolicy": "STOP_TASK",
     "ApplyErrorEscalationCount": 0,
     "FullLoadIgnoreConflicts": false
   }

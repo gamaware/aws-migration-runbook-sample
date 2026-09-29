@@ -1,5 +1,5 @@
 output "alb_dns_name" {
-  description = "DNS name of the internal load balancer; the aws records in the private hosted zone alias to it."
+  description = "DNS name of the internal load balancer; the aws records in the private hosted zones alias to it."
   value       = aws_lb.this.dns_name
 }
 

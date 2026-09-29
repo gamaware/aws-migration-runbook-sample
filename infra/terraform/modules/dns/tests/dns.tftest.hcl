@@ -4,7 +4,6 @@ mock_provider "aws" {
 
 variables {
   name                  = "hg-test"
-  zone_name             = "example.com"
   vpc_id                = "vpc-0123456789abcdef0"
   associated_vpc_ids    = ["vpc-0a1b2c3d4e5f67890"]
   resolver_subnet_ids   = ["subnet-0bbbbbbbbbbbbbbb1", "subnet-0bbbbbbbbbbbbbbb2"]
@@ -21,13 +20,18 @@ run "records_live_in_a_private_zone" {
   command = apply
 
   assert {
-    condition     = toset([for v in aws_route53_zone.private.vpc : v.vpc_id]) == toset(["vpc-0123456789abcdef0", "vpc-0a1b2c3d4e5f67890"])
-    error_message = "The zone must be private, associated with the wave 1 VPC and the storefront VPC."
+    condition     = alltrue([for z in aws_route53_zone.private : toset([for v in z.vpc : v.vpc_id]) == toset(["vpc-0123456789abcdef0", "vpc-0a1b2c3d4e5f67890"])])
+    error_message = "Every zone must be private, associated with the wave 1 VPC and the storefront VPC."
   }
 
   assert {
-    condition     = alltrue([for r in concat(values(aws_route53_record.onprem), values(aws_route53_record.aws)) : r.zone_id == aws_route53_zone.private.zone_id])
-    error_message = "Every weighted member must live in the private zone, never in the public one."
+    condition     = toset([for z in aws_route53_zone.private : z.name]) == toset(["warehouse.example.com", "api.example.com"])
+    error_message = "Each switched name gets its own zone; a private zone for the parent domain would shadow every other public name in the associated VPCs."
+  }
+
+  assert {
+    condition     = alltrue([for name, r in aws_route53_record.onprem : r.zone_id == aws_route53_zone.private[name].zone_id && r.name == name]) && alltrue([for name, r in aws_route53_record.aws : r.zone_id == aws_route53_zone.private[name].zone_id && r.name == name])
+    error_message = "Every weighted member must live at the apex of its own private zone, never in the public one."
   }
 
   assert {

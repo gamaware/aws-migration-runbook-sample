@@ -3,3 +3,7 @@ images = {
   web = "123456789012.dkr.ecr.us-east-1.amazonaws.com/harbor-web@sha256:1111111111111111111111111111111111111111111111111111111111111111"
   api = "123456789012.dkr.ecr.us-east-1.amazonaws.com/harbor-api@sha256:2222222222222222222222222222222222222222222222222222222222222222"
 }
+
+# Route 53 weights (ADR 0003). Keep them here, never only on the command line: the runbook's DNS switch (C-19) and
+# rollback (R-03) edit this line, so a later apply cannot move users back by accident.
+traffic_weights = { onprem = 100, aws = 0 }

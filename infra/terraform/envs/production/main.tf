@@ -40,7 +40,7 @@ data "aws_partition" "current" {}
 
 # The public zone serves one purpose here: the ACM DNS validation records, which prove control of the names to the
 # certificate authority. They are CNAMEs to acm-validations.aws, not endpoints; the names users resolve live in the
-# private hosted zone of the dns module and never point at anything public.
+# private hosted zones of the dns module and never point at anything public.
 data "aws_route53_zone" "public" {
   name         = local.target.hosted_zone
   private_zone = false
@@ -206,7 +206,6 @@ module "dns" {
   source = "../../modules/dns"
 
   name                  = local.name
-  zone_name             = local.target.hosted_zone
   vpc_id                = module.network.vpc_id
   associated_vpc_ids    = [local.target.storefront_vpc.id]
   resolver_subnet_ids   = module.network.app_subnet_ids

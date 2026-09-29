@@ -11,7 +11,7 @@ variables {
   alb_ingress_cidrs = ["10.40.0.0/16", "10.60.0.0/16"]
   s3_prefix_list_id = "pl-63a5400a"
   carrier_api_cidrs = ["203.0.113.200/32"]
-  access_logs       = { bucket = "harbor-log-archive-444455556666-us-east-1", prefix = "hg-test/alb" }
+  access_logs       = { bucket = "harbor-log-archive-777788889999-us-east-1", prefix = "hg-test/alb" }
   certificate_arn   = "arn:aws:acm:us-east-1:111122223333:certificate/11111111-2222-3333-4444-555555555555"
   kms_key_arn       = "arn:aws:kms:us-east-1:111122223333:key/11111111-2222-3333-4444-555555555555"
 
@@ -80,7 +80,7 @@ run "access_logs_go_to_the_log_archive" {
   command = apply
 
   assert {
-    condition     = one(aws_lb.this.access_logs).enabled && one(aws_lb.this.access_logs).bucket == "harbor-log-archive-444455556666-us-east-1" && one(aws_lb.this.access_logs).prefix == "hg-test/alb"
+    condition     = one(aws_lb.this.access_logs).enabled && one(aws_lb.this.access_logs).bucket == "harbor-log-archive-777788889999-us-east-1" && one(aws_lb.this.access_logs).prefix == "hg-test/alb"
     error_message = "Access logs must be on and delivered to the central log archive bucket."
   }
 }

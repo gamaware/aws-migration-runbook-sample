@@ -1,6 +1,9 @@
-# The wave 1 names live in a Route 53 private hosted zone, because the load balancer they switch to is internal. The
-# zone is associated with the wave 1 VPC and the storefront VPC; the corporate resolvers reach it over the VPN through
-# the Resolver inbound endpoint below. Nothing here is published on the internet.
+# The wave 1 names live in Route 53 private hosted zones, because the load balancer they switch to is internal. Each
+# name gets its own zone (warehouse.example.com, api.example.com) with the weighted pair at the zone apex. A single
+# private zone for example.com would shadow the whole public domain in every associated VPC: the storefront would stop
+# resolving its own public names and sftp.example.com. The zones are associated with the wave 1 VPC and the storefront
+# VPC; the corporate resolvers reach them over the VPN through the Resolver inbound endpoint below. Nothing here is
+# published on the internet.
 #
 # Each name is a weighted pair: "onprem" points at the data center address, "aws" aliases the load balancer.
 # The cutover changes only the weights. Terraform updates the two members in separate calls, so for a few seconds
@@ -11,7 +14,7 @@ resource "aws_route53_record" "onprem" {
   #checkov:skip=CKV2_AWS_23:The record points at the data center address on purpose; it is removed when wave 1 exits.
   for_each = var.records
 
-  zone_id        = aws_route53_zone.private.zone_id
+  zone_id        = aws_route53_zone.private[each.key].zone_id
   name           = each.key
   type           = "A"
   ttl            = var.onprem_ttl
@@ -26,7 +29,7 @@ resource "aws_route53_record" "onprem" {
 resource "aws_route53_record" "aws" {
   for_each = var.records
 
-  zone_id        = aws_route53_zone.private.zone_id
+  zone_id        = aws_route53_zone.private[each.key].zone_id
   name           = each.key
   type           = "A"
   set_identifier = "aws"
@@ -44,11 +47,13 @@ resource "aws_route53_record" "aws" {
   }
 }
 
-# --- Private hosted zone ---------------------------------------------------------------------------------------
+# --- Private hosted zones, one per name ----------------------------------------------------------------------------
 
 resource "aws_route53_zone" "private" {
-  name    = var.zone_name
-  comment = "Wave 1 names, resolvable only inside the associated VPCs and through the Resolver inbound endpoint"
+  for_each = var.records
+
+  name    = each.key
+  comment = "Wave 1 name ${each.key}, resolvable only inside the associated VPCs and through the Resolver inbound endpoint"
 
   vpc {
     vpc_id = var.vpc_id

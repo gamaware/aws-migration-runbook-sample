@@ -11,8 +11,8 @@ onprem_bgp_asn: 65010
 hosted_zone: example.com
 
 # The storefront, already on AWS in this account, calls api.example.com from its own VPC. A VPC peering connection
-# carries those calls to the internal load balancer after the switch, and the private hosted zone is associated with
-# that VPC so it resolves the weighted records.
+# carries those calls to the internal load balancer after the switch, and the private hosted zones (one per record name)
+# are associated with that VPC so it resolves the weighted records.
 storefront_vpc:
   id: vpc-0a1b2c3d4e5f67890
   cidr: 10.50.0.0/16
@@ -25,7 +25,7 @@ carrier_api_cidrs: [203.0.113.200/32, 203.0.113.201/32]
 # in the log archive account. ALB access logging supports only SSE-S3; that bucket's encryption, retention and Object
 # Lock are managed there, not in this workload.
 alb_access_logs:
-  bucket: harbor-log-archive-444455556666-us-east-1
+  bucket: harbor-log-archive-777788889999-us-east-1
   prefix: harbor-prod/alb
 
 # Records that move in wave 1. onprem_value must match data/synthetic/dns-records.csv.

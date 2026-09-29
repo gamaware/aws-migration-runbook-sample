@@ -238,8 +238,27 @@ def dms_covers_the_database(m: Migration) -> Result:
     return r
 
 
+# Error policies that decide what happens to a row or table DMS cannot apply. LOG_ERROR or IGNORE_RECORD would let a
+# task keep running with a missing or divergent row; the go/no-go criteria assume a failed table is suspended instead.
+_ROW_ERROR_POLICIES = (
+    "DataErrorPolicy",
+    "DataTruncationErrorPolicy",
+    "DataErrorEscalationPolicy",
+    "TableErrorPolicy",
+    "ApplyErrorDeletePolicy",
+    "ApplyErrorInsertPolicy",
+    "ApplyErrorUpdatePolicy",
+)
+# Escalations must stop the task: SUSPEND_TABLE here would keep the task running with a table left behind.
+_STOP_TASK_POLICIES = ("TableErrorEscalationPolicy", "ApplyErrorEscalationPolicy")
+
+
 def dms_tasks_are_safe(m: Migration) -> Result:
-    r = Result("PLAN-10", "DMS tasks: full load plus CDC forward, CDC only back, validation on, LOBs fit")
+    r = Result(
+        "PLAN-10",
+        "DMS tasks: full load plus CDC forward, CDC only back, validation on, LOBs fit, errors suspend the table, "
+        "escalations stop the task",
+    )
     tasks = m.data_migration["tasks"]
     if tasks["forward"]["migration_type"] != "full-load-and-cdc":
         r.fail("forward task must be full-load-and-cdc")
@@ -254,6 +273,14 @@ def dms_tasks_are_safe(m: Migration) -> Result:
         meta = settings.get("TargetMetadata", {})
         if meta.get("BatchApplyEnabled"):
             r.fail(f"{label} task settings: BatchApplyEnabled splits transactions; keep it false")
+        errors = settings.get("ErrorBehavior", {})
+        fail_closed = ("SUSPEND_TABLE", "STOP_TASK")
+        for key in _ROW_ERROR_POLICIES:
+            if errors.get(key) not in fail_closed:
+                r.fail(f"{label} task settings: {key} must be SUSPEND_TABLE or STOP_TASK")
+        for key in _STOP_TASK_POLICIES:
+            if errors.get(key) != "STOP_TASK":
+                r.fail(f"{label} task settings: {key} must be STOP_TASK")
         largest = max((int(row["max_lob_kb"]) for row in m.migrated_schemas()), default=0)
         if meta.get("LimitedSizeLobMode") and int(meta.get("LobMaxSize", 0)) < largest:
             r.fail(f"{label} task settings: LobMaxSize {meta.get('LobMaxSize')} KB < largest LOB {largest} KB")
