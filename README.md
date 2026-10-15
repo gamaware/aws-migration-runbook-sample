@@ -157,11 +157,9 @@ Architecture decision records follow the *Fundamentals of Software Architecture*
 
 ## Related work
 
-Part of the [AWS DevOps portfolio](https://github.com/gamaware/aws-devops-portfolio); it backs the "Migration to AWS"
-service: [Migration to AWS on Upwork](https://www.upwork.com/freelancers/~014b3520cf9e140103). The method is the one
-Alex uses in audits for ITESO and freelance clients in Guadalajara. Contribution, conduct and support guidelines are
-inherited from [gamaware/.github](https://github.com/gamaware/.github); see also [SECURITY.md](SECURITY.md) and
-[CHANGELOG.md](CHANGELOG.md).
+Part of the [AWS DevOps portfolio](https://github.com/gamaware/aws-devops-portfolio). Contribution, conduct and
+support guidelines are inherited from [gamaware/.github](https://github.com/gamaware/.github); see also
+[SECURITY.md](SECURITY.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
