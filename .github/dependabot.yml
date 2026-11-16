@@ -9,6 +9,7 @@ updates:
     groups:
       github-actions-all:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
   - package-ecosystem: uv
     directory: /
     schedule:
@@ -18,6 +19,7 @@ updates:
     groups:
       uv-all:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
   - package-ecosystem: terraform
     directories:
       - /infra/terraform/envs/production
@@ -28,5 +30,5 @@ updates:
       default-days: 7
     groups:
       terraform-all:
-        group-by: dependency-name
         patterns: ["*"]
+        update-types: ["minor", "patch"]
